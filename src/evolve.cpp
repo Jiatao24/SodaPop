@@ -317,6 +317,12 @@ int main(int argc, char *argv[])
                         (*it).ranmut_Gene();
                     }       
                 }
+                else
+                {
+                    // Even if we don't mutate, update the fitness
+                    // fitness will change in stochastic gene expression
+                    it->UpdateRates();
+                }
                 std::advance(it,1);
             }
         }
@@ -327,6 +333,7 @@ int main(int argc, char *argv[])
             int s = Cell_temp.size();
             std::vector<PolyCell>::iterator j = Cell_temp.begin();
             Cell_temp.emplace_back((*(j+RandomNumber()*s)));
+            Cell_temp.back().UpdateRates();
         }
 
         // if the population exceeds N

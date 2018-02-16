@@ -52,6 +52,7 @@ class PolyCell: public Cell
         double metabolicOutput();
         double multiplicative();
         double neutral();
+        double stochasticExpression();
         ///////////////////////
         const double fitness();
         int Na(){return Total_Na_;}
@@ -97,17 +98,18 @@ void PolyCell::FillGene_L()
 void PolyCell::selectFitness()
 {
     switch(PolyCell::ff_){
-        case 1: fit = &PolyCell::flux;
-            break;
-        case 2: fit = &PolyCell::toxicity;
-            break;
-        case 3: fit = &PolyCell::metabolicOutput;
-            break;
-        case 4: fit = &PolyCell::multiplicative;
-            break;
-        case 5: fit = &PolyCell::neutral;
-            break;
-        default:;
+    case 1: fit = &PolyCell::flux;
+        break;
+    case 2: fit = &PolyCell::toxicity;
+        break;
+    case 3: fit = &PolyCell::metabolicOutput;
+        break;
+    case 4: fit = &PolyCell::multiplicative;
+        break;
+    case 5: fit = &PolyCell::neutral;
+        break;
+    case 6: fit = &PolyCell::stochasticExpression;
+    default:;
     }
 }
 
@@ -144,7 +146,8 @@ double PolyCell::metabolicOutput()
         t +=(*i).misfolded();
     }
     f = A_FACTOR/f;
-    t = COST*f;
+    // t = COST*f;    // Is this a bug? t = COST*f?
+    t = COST * t;
 
     double w = f - t;
     if(w<0) return 0;
@@ -167,6 +170,25 @@ double PolyCell::multiplicative()
 double PolyCell::neutral()
 {
     return 1;
+}
+
+// STOCHASTIC PROTEIN EXPRESSION (VZ)
+double PolyCell::stochasticExpession()
+{
+    double fitness = 0;
+    double toxicity = 0;
+    for (auto& it : Gene_arr_)
+    {
+        it->update_stochastic_conc();
+        fitness += 1 / it->functional(true);
+        toxicity += it->misfolded(true);
+    }
+    fitness = A_FACTOR / fitness;
+    toxicity = COST * toxicity;
+    
+    double w = fitness - toxicity;
+
+    return (w < 0) ? 0 : w;
 }
 
 const double PolyCell::fitness()

@@ -55,7 +55,8 @@ auto ProperlySeededRandomEngine () -> typename std::enable_if<!!N, T>::type {
     T seededEngine (seeds);
     return seededEngine;
 }
-   Ran *uniformdevptr;
+
+Ran *uniformdevptr;		// defined in include/random/include_headers.h
 
 /******** PSEUDO RANDOM NUMBER GENERATOR
 
@@ -683,6 +684,7 @@ void ExtractPDDGMatrix(std::string filepath)
                 //extract DDG values
                 double x = atof(word.c_str());
                 matrix[gene_num][i-1][j] = exp(-x/kT);
+                // note storage as boltzmann factor
             }
         }
         else if ( word == "Gene_NUM"){

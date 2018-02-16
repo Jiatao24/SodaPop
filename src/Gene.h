@@ -31,8 +31,13 @@ class Gene
         
         double dg_;		//stability
         double f_;      //gene "fitness"
+
+        double stochastic_shape;
+        double stochastic_scale;
+
     public:
         double conc;	//concentration
+        double stochastic_conc;
         double e;		//essentiality: 1-if directly involved in replication, 0-otherwise
    
     public:
@@ -82,9 +87,10 @@ class Gene
         const int Na(){return Na_;}
 
         double CheckDG();
-        double functional();
-        double misfolded();
         double Pnat();
+        double functional(bool stochastic=false);
+        double misfolded(bool stochastic=false);
+        double update_stochastic_conc();
 };
 
 double Gene::shape_ = 1.0;
@@ -141,51 +147,68 @@ Gene::Gene(std::fstream& gene_in)
     std::string line;
     // Read gene file line by line
     while (!gene_in.eof()){
-        getline(gene_in,line);
+        getline(gene_in, line);
         std::string word;
         std::istringstream iss(line, std::istringstream::in);
         iss >> word;
-        if (word == "Gene_NUM"){ 
-            iss>>word; 
+        if (word == "Gene_NUM")
+        {
+            iss >> word; 
             g_num_ = atoi(word.c_str());
         }
-        else if (word == "N_Seq"){ 
-            iss>>nucseq_;
-            ln_=nucseq_.length();
-            if((ln_ % 3) != 0){
+        else if (word == "N_Seq")
+        { 
+            iss >> nucseq_;
+            ln_ = nucseq_.length();
+            if ((ln_ % 3) != 0)
+            {
                   std::cerr << "Invalid length for nucleotide sequence: " << ln_ << std::endl;
                   exit(2);
             }
-            else{
+            else
+            {
                   la_ = ln_/3;
-                  std::string aaseq=GetProtFromNuc(nucseq_);
+                  std::string aaseq = GetProtFromNuc(nucseq_);
 
-                  //check stop codons in midsequence
+                  // check stop codons in midsequence
                   std::string::size_type loc = aaseq.find("X", 0 );
-                  if(loc != std::string::npos){
+                  if (loc != std::string::npos)
+                  {
                         std::cerr << "ERROR: DNA sequence has STOP codons in the middle"<<std::endl;
                         exit(2);
                     }           
             }
         }
-        else if ( word=="E" ){
+        else if (word == "E")
+        {
             iss >> word;
             e = atoi(word.c_str());
         }
-        else if (word == "CONC"){
+        else if (word == "CONC")
+        {
             iss >> word;
-    	   conc = atof(word.c_str());
+            conc = atof(word.c_str());
         }
         else if (word == "DG")
         { 
-            iss>>word; 
+            iss >> word;
       	    dg_ = atof(word.c_str());
             dg_ = exp(-dg_/kT);
         }
         else if (word == "F")
         { 
-            iss>>word; 
+            iss >> word;
             f_ = atof(word.c_str());
+        }
+        else if (word == "STOCHASTIC_SHAPE")
+        {
+            iss >> word;
+            stochastic_shape = stochastic_shape;
+        }
+        else if (word == "STOCHASTIC_SCALE")
+        {
+            iss >> word;
+            stochastic_scale = stochastic_scale;
         }
         else if (word == "//"){;}//do nothing
     }
@@ -203,6 +226,9 @@ Gene::Gene(const Gene& G)
     dg_ = G.dg_;
     f_ = G.f_;
     conc = G.conc;
+    stochastic_shape = G.stochastic_shape;
+    stochastic_scale = G.stochastic_scale;
+    stochastic_conc = G.stochastic_conc
     e = G.e;
     Na_ = G.Na_;
     Ns_ = G.Ns_;
@@ -229,6 +255,9 @@ Gene& Gene::operator=(const Gene& A)
         this->la_ = A.la_;
         this->dg_ = A.dg_;
         this->f_ = A.f_;
+        this->stochastic_shape = A.stochastic_shape;
+        this->stochastic_scale = A.stochastic_scale;
+        this->stochastic_conc = A.stochastic_conc;
         this->conc = A.conc;
         this->e = A.e;
         this->Na_ = A.Na_;
@@ -349,6 +378,7 @@ std::string Gene::Mutate_Stabil(int i, int j)
 
 /*
 This version of the mutation function draws the selection coefficient value from a gamma or normal distribution
+* VZ: It seems only RandomNormal is possible here?
 */
 double Gene::Mutate_Select_Dist(int i, int j)
 { 
@@ -378,6 +408,10 @@ input by the user.
 INPUT: 
     i -> site to mutate
     j -> bp to mutate to
+
+VZ: I believe the function description is wrong because it was copied
+    from Mutate_Stabil, because in this case, the matrix stores DMS
+    data, not DDG.
 */
 std::string Gene::Mutate_Select(int i, int j)
 { 
@@ -475,13 +509,37 @@ double Gene::Pnat()
 }
 
 // Number of functional copies in the cell
-double Gene::functional()
+// concentration * pnat
+double Gene::functional(bool stochastic)
 {
-    return (this->conc)*this->Pnat();
+    if (stochastic)
+    {
+        return stochastic_conc * Pnat();
+    }
+    else
+    {
+        return conc * Pnat();
+    }
 }
 
 // Number of misfolded copies in the cell
-double Gene::misfolded()
+double Gene::misfolded(bool stochastic)
 {
-    return (this->conc)*(1-Pnat());
+    if (stochastic)
+    {
+        return stochastic_conc * (1 - Pnat());
+    }
+    else
+    {
+        return conc * (1 - Pnat());
+    }
+}
+
+// Draw a new value for stochastic concentration
+double Gene::update_stochastic_conc()
+{
+    stochastic_conc = Gene::gamma_(
+        engine, std::gamma_distribution<double>::param_type(
+            stochastic_shape, stochastic_scale));
+    return stochastic_conc;
 }
