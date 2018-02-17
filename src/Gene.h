@@ -37,7 +37,7 @@ class Gene
 
     public:
         double conc;	//concentration
-        double stochastic_conc;
+        int stochastic_conc;
         double e;		//essentiality: 1-if directly involved in replication, 0-otherwise
    
     public:
@@ -90,7 +90,7 @@ class Gene
         double Pnat();
         double functional(bool stochastic=false);
         double misfolded(bool stochastic=false);
-        double update_stochastic_conc();
+        int update_stochastic_conc();
 };
 
 double Gene::shape_ = 1.0;
@@ -135,6 +135,7 @@ Gene::Gene(const int i, const std::string a, double c)
         dg_= 1;
         f_= 1;
         conc = c;
+        stochastic_conc = c;
         e = 0;
         Na_ = 0;
         Ns_ = 0;
@@ -188,6 +189,7 @@ Gene::Gene(std::fstream& gene_in)
         {
             iss >> word;
             conc = atof(word.c_str());
+            stochastic_conc = conc;
         }
         else if (word == "DG")
         { 
@@ -203,12 +205,12 @@ Gene::Gene(std::fstream& gene_in)
         else if (word == "STOCHASTIC_SHAPE")
         {
             iss >> word;
-            stochastic_shape = stochastic_shape;
+            stochastic_shape = atof(word.c_str());
         }
         else if (word == "STOCHASTIC_SCALE")
         {
             iss >> word;
-            stochastic_scale = stochastic_scale;
+            stochastic_scale = atof(word.c_str());
         }
         else if (word == "//"){;}//do nothing
     }
@@ -228,7 +230,7 @@ Gene::Gene(const Gene& G)
     conc = G.conc;
     stochastic_shape = G.stochastic_shape;
     stochastic_scale = G.stochastic_scale;
-    stochastic_conc = G.stochastic_conc
+    stochastic_conc = G.stochastic_conc;
     e = G.e;
     Na_ = G.Na_;
     Ns_ = G.Ns_;
@@ -536,10 +538,10 @@ double Gene::misfolded(bool stochastic)
 }
 
 // Draw a new value for stochastic concentration
-double Gene::update_stochastic_conc()
+int Gene::update_stochastic_conc()
 {
-    stochastic_conc = Gene::gamma_(
-        engine, std::gamma_distribution<double>::param_type(
-            stochastic_shape, stochastic_scale));
+    stochastic_conc = (int)(0.5 +
+        Gene::gamma_(engine, std::gamma_distribution<double>::param_type(
+                         stochastic_shape, stochastic_scale)));
     return stochastic_conc;
 }

@@ -319,11 +319,11 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    // Even if we don't mutate, update the fitness
-                    // fitness will change in stochastic gene expression
+                    // Even if we don't mutate, update the fitness.
+                    // In stochastic gene expression, fitness wil change.
                     it->UpdateRates();
                 }
-                std::advance(it,1);
+                std::advance(it,1); // why not just it++?
             }
         }
 

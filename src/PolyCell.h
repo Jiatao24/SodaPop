@@ -109,6 +109,7 @@ void PolyCell::selectFitness()
     case 5: fit = &PolyCell::neutral;
         break;
     case 6: fit = &PolyCell::stochasticExpression;
+        break;
     default:;
     }
 }
@@ -171,23 +172,28 @@ double PolyCell::neutral()
     return 1;
 }
 
-// STOCHASTIC PROTEIN EXPRESSION (VZ)
-double PolyCell::stochasticExpession()
+// STOCHASTIC PROTEIN EXPRESSION
+double PolyCell::stochasticExpression()
 {
-    double fitness = 0;
+    double flux = 0;
     double toxicity = 0;
     for (auto& it : Gene_arr_)
     {
-        it->update_stochastic_conc();
-        fitness += 1 / it->functional(true);
-        toxicity += it->misfolded(true);
+        it.update_stochastic_conc();
+        if (it.stochastic_conc == 0)
+        {
+	    // Fatal to not express any protein
+            return 0;
+        }
+        flux += 1 / it.functional(true);
+        toxicity += it.misfolded(true);
     }
-    fitness = A_FACTOR / fitness;
+
+    flux = A_FACTOR / flux;
     toxicity = COST * toxicity;
     
-    double w = fitness - toxicity;
-
-    return (w < 0) ? 0 : w;
+    double fitness = flux - toxicity;
+    return (fitness < 0) ? 0 : fitness;
 }
 
 const double PolyCell::fitness()
