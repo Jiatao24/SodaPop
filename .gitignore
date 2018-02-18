@@ -1,1 +1,3 @@
-_site/
+*~
+*[oa]
+.DS_Store

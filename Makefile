@@ -11,7 +11,7 @@ SODAPOP = sodapop
 SNAP2ASCII = sodasnap
 SUMM2SNAP = sodasumm
 
-INSTALLDIR = /usr/local/bin
+INSTALLDIR = $(HOME)/local/bin
 
 all: $(SODAPOP) $(SNAP2ASCII) $(SUMM2SNAP)
 install:
@@ -19,7 +19,7 @@ install:
 	$(CP) $(SODAPOP) $(INSTALLDIR)/
 	$(CP) $(SNAP2ASCII) $(INSTALLDIR)/
 	$(CP) $(SUMM2SNAP) $(INSTALLDIR)/
-	
+
 uninstall:
 	@echo \#\#\# Uninstalling binaries from $(INSTALLDIR)/...
 	$(RM) -r $(INSTALLDIR)/$(SODAPOP)

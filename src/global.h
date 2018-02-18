@@ -102,7 +102,8 @@ const double ddG_max = 99;
 const double CONC_MAX = 1e15;
 const double kT = 0.5922; //defines the energy units
 const double COST = 1e-4; // see Geiler-Samerotte et al. 2011
-const double A_FACTOR = 0.005754898; // see Serohijos & Shakhnovich 2013
+const double A_FACTOR = 39.985; // see Serohijos & Shakhnovich 2013
+                                // A_factor = 1 / sum_i{1/abundance_i}
 const double fNs = 0.775956284; //fraction of non-synonymous substitutions in a typical protein
 
 
