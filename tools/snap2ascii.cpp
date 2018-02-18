@@ -1,8 +1,13 @@
 #include "../src/global.h"
 
+// Output into ASCII:
+// Header: frame_time, t0, total_cell_count
+//   - frame_time :: generation count
+//   - t0 :: starting time. I think it should be 0
+
 int main(int argc, char *argv[]){
     if(argc != 4){
-        std::cerr <<"snap2ascii.linux <snap-binary> <out-ascii> [ 0-full | 1-minimal ]\n";
+        std::cerr <<"sodasnap <snap-binary> <out-ascii> [ 0-full | 1-minimal ]\n";
         exit(1);
     }
 

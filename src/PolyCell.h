@@ -320,6 +320,11 @@ void PolyCell::ranmut_Gene()
 }
 
 // Dump cell information to binary file
+// Ordering is
+// cell_index, cell_id, barcode size, barcode, fitness, mutation rate (c_mrate), n_genes.
+// Then for each gene:
+// gene_id, essentiality, concentration, stochastic_conc, deltaG, gene fitness,
+// n_nonsynonymous, n_synonymous, DNA sequence length, DNA sequence
 void PolyCell::dump(std::fstream& OUT, int cell_index)
 {
     int x;
@@ -348,6 +353,7 @@ void PolyCell::dump(std::fstream& OUT, int cell_index)
         int gene_nid = (*i).num();
         double s = (*i).e;
         double c = (*i).conc;
+	int stoc_conc = i->stochastic_conc;
         double dg = -kT*log((*i).dg());
         double f = (*i).f();
 
@@ -357,6 +363,7 @@ void PolyCell::dump(std::fstream& OUT, int cell_index)
         OUT.write((char*)(&gene_nid),sizeof(int));
         OUT.write((char*)(&s),sizeof(double));
         OUT.write((char*)(&c),sizeof(double));
+        OUT.write((char*)(&stoc_conc),sizeof(int));
         OUT.write((char*)(&dg),sizeof(double));
         OUT.write((char*)(&f),sizeof(double));
         OUT.write((char*)(&Na),sizeof(int));
