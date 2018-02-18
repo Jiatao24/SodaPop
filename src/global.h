@@ -765,7 +765,7 @@ void LoadPrimordialGenes(const std::string& genelistfile, const std::string& gen
         iss >> word; 
         if ( word=="G" ){
             iss >> word;
-            word = genesPath + word;
+            word = genesPath + "/" +  word;
             std::fstream genefileIN (word.c_str(), std::fstream::in | std::fstream::out);
             if (!genefileIN.is_open()){
                 std::cerr << "File could not be open: "<< word <<std::endl;
