@@ -206,6 +206,7 @@ void PolyCell::UpdateRates()
     ch_Fitness((this->*fit)());
 }
 
+// ctr is the generation
 void PolyCell::ranmut_Gene(std::ofstream& log,int ctr)
 {
     // get genome size
@@ -263,8 +264,10 @@ void PolyCell::ranmut_Gene(std::ofstream& log,int ctr)
     // save beneficial mutations to log
     // we could save all mutations with abs(s) >= some value x
     log << barcode().c_str() << "\t";
-    log << fixed;
+    log << fixed;		// this std::fixed; output fixed amount of zeros
     log << mutation << "\t";
+    // if it's a nonsyn mutation, mutation is a tab-separated string
+    // gene_number, current residue, residue number, new residue
     log << s << "\t";
     log << ctr << endl;
 }
