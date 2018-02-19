@@ -832,6 +832,7 @@ void qread_Cell(std::fstream& IN, std::fstream& OUT)
 }
 
 // Reads a unit cell stored in binary format using Cell::dump()
+// This function writes part of what's read to OUT
 // Output is like this:
 // barcode "C" cell_index fitness mrate
 // for each gene, output

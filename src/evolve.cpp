@@ -397,10 +397,12 @@ int main(int argc, char *argv[])
     std::cout << "Total number of mutation events: " << MUTATION_CTR << std::endl;
     // if the user toggled analysis, call shell script
     if(enableAnalysis){
-        std::string script = "tools/barcodes.sh";
-        std::string command = "/bin/bash "+script+" "+outDir+" "+std::to_string(GENERATION_MAX)+" "+std::to_string(N)+" "+std::to_string(DT)+" "+std::to_string((int) useShort);
-        const char *cmd = command.c_str();
-        system(cmd);
+        std::string script = "/path/to/barcodes.sh";
+        std::string command = script+" "+outDir+" "+std::to_string(GENERATION_MAX)+" "+std::to_string(N)+" "+std::to_string(DT)+" "+std::to_string((int) useShort);
+        std::cout << "Call analysis using the following command:" << std::endl;
+        std::cout << command << std::endl;
+        // const char *cmd = command.c_str();
+        // system(cmd);
     }
     return 0;
 }

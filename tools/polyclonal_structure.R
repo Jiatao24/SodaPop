@@ -6,8 +6,11 @@ dt=as.numeric(arg[2])
 dir = getwd()
 
 #### LOAD UTILITIES (INSTALL IF MISSING)
-if (!require("pacman")) install.packages("pacman",repos = "http://cran.us.r-project.org")
-pacman::p_load(ggplot2, reshape2)
+# if (!require("pacman")) install.packages("pacman",repos = "http://cran.us.r-project.org")
+# pacman::p_load(ggplot2, reshape2)
+require("ggplot2")
+require("reshape2")
+require("grid")
 
 print("Importing time series data...")
 

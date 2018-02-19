@@ -20,7 +20,7 @@ FILES=$PREFIX/snapshots/*.snap
 for filename in $FILES
 do
 	y=${filename%.001}
-	./sodasnap $filename $y.txt $LONG
+	sodasnap $filename $y.txt $LONG
 done
 
 #### EXTRACT AND SORT BARCODES
@@ -31,7 +31,7 @@ do
 	y=${filename%%.txt}
 	grep -w "C" $filename | cut -f1 | sort > $PREFIX/barcodes/${y##*/}.barcodes
 	#### SUM POPULATION FITNESS FOR EACH TIME POINT AND DIVIDE BY POP SIZE
-	grep -w "C" $filename | awk -v N=$3 '{sum += $5} END {print sum/N}' >> $PREFIX/avg_fitness.txt
+	grep -w "C" $filename | awk -v N=$3 '{sum += $4} END {print sum/N}' >> $PREFIX/avg_fitness.txt
 done
 
 echo Parsing unique barcodes...
@@ -76,6 +76,8 @@ cat $PREFIX/barcodes/series$i.txt | cut -d " " -f 1,3- > $PREFIX/ALL_generations
 rm $PREFIX/barcodes/series*.txt
 
 #### PLOT RESULTS IN R SCRIPTS
-Rscript tools/polyclonal_structure.R /out/$OUT/ $DT
+# Presume that polyclonal_structure.R is in the same directory this script is in
+location="$(dirname $(readlink -f ${BASH_SOURCE[0]}))"
+Rscript "${location}/polyclonal_structure.R" /out/$OUT/ $DT
 
 echo Done.
