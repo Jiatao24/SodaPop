@@ -36,6 +36,10 @@ step = dt*10
 if(fixgen/step > 12){
 	step = dt*50
 }
+if(fixgen/step < 1){
+    step = step/10
+}
+
 
 a = ggplot(avg_fitness, aes(x=gen,y=V1)) + geom_line() + theme_bw() + labs(x = "Generations",y="Average fitness")
 #a = ggplot(avg_fitness, aes(x=gen,y=V1)) + stat_smooth(linetype="dashed",color="black",size=0.6,span=0.1) + theme_bw() + labs(x = "Generations",y="Average fitness")

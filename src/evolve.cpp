@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
                 else
                 {
                     // Even if we don't mutate, update the fitness.
-                    // In stochastic gene expression, fitness wil change.
+                    // In stochastic gene expression, fitness will change.
                     it->UpdateRates();
                 }
                 std::advance(it,1); // why not just it++?
@@ -333,6 +333,7 @@ int main(int argc, char *argv[])
             int s = Cell_temp.size();
             std::vector<PolyCell>::iterator j = Cell_temp.begin();
             Cell_temp.emplace_back((*(j+RandomNumber()*s)));
+            // Need to update fitness if stochasticExpression
             Cell_temp.back().UpdateRates();
         }
 

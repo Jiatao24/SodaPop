@@ -268,8 +268,8 @@ void PolyCell::ranmut_Gene(std::ofstream& log,int ctr)
     log << mutation << "\t";
     // if it's a nonsyn mutation, mutation is a tab-separated string
     // gene_number, current residue, residue number, new residue
-    log << s << "\t";
-    log << ctr << endl;
+    log << s << "\t";		// fitness difference f - i
+    log << ctr << endl;		// generation count
 }
 
 void PolyCell::ranmut_Gene()
