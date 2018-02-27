@@ -34,11 +34,13 @@ $(SNAP2ASCII): snap2ascii.o
 $(SUMM2SNAP): summ2snap.o
 	$(LINK) -o sodasumm summ2snap.o
 
-sodapop.o: ./src/evolve.cpp ./src/Gene.h ./src/Cell.h ./src/global.h
-	$(COMPILE) -o sodapop.o ./src/evolve.cpp
+rng.o: ./src/rng.cpp
+	$(COMPILE) -o rng.o ./src/rng.cpp
+sodapop.o: ./src/evolve.cpp ./src/Gene.h ./src/Cell.h ./src/global.h rng.o
+	$(COMPILE) -o sodapop.o ./src/evolve.cpp rng.o
 snap2ascii.o: ./tools/snap2ascii.cpp ./src/global.h
 	$(COMPILE) -o snap2ascii.o ./tools/snap2ascii.cpp
-summ2snap.o: ./tools/summ2snap.cpp ./src/PolyCell.h 
+summ2snap.o: ./tools/summ2snap.cpp ./src/PolyCell.h
 	$(COMPILE) -o summ2snap.o ./tools/summ2snap.cpp
 
 clean:
