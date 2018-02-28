@@ -214,7 +214,7 @@ void PolyCell::ranmut_Gene(std::ofstream& log,int ctr)
     // get genome size
     int L = Gene_L_.back();
     // pick random site to mutate
-    int site = (int) ( L * random_number());
+    int site = (int) ( L * randomNumber());
 
     // find the corresponding gene
     std::vector<Gene>::iterator j = Gene_arr_.begin();
@@ -233,7 +233,7 @@ void PolyCell::ranmut_Gene(std::ofstream& log,int ctr)
 
     std::string mutation = "";
 
-    int bp = (int) (3 * random_number());
+    int bp = (int) (3 * randomNumber());
 
     double wi = fitness();
     if(fromS_)
@@ -279,7 +279,7 @@ void PolyCell::ranmut_Gene()
     // get genome size
     int L = Gene_L_.back();
     // pick random site to mutate
-    int site = (int) ( L * random_number());
+    int site = (int) ( L * randomNumber());
 
     // find the corresponding gene
     std::vector<Gene>::iterator j = Gene_arr_.begin();
@@ -296,7 +296,7 @@ void PolyCell::ranmut_Gene()
          site = site - (*k);        
     }
 
-    int bp = (int) (3 * random_number());
+    int bp = (int) (3 * randomNumber());
     // what is the input type?
     if(fromS_)
     {

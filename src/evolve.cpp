@@ -126,9 +126,7 @@ int main(int argc, char *argv[])
     inputType = inputArg.getValue();
 
     if (seedArg.isSet())
-        initialize_rng(seedArg.getValue());
-    else
-        initialize_rng();
+        setRngSeed(seedArg.getValue());
 
     std::cout << "Begin ... " << std::endl;
     if(inputType == "s")
@@ -315,7 +313,7 @@ int main(int argc, char *argv[])
             // after filling with children, go through each one for mutation
             while(it < last){
                 // potentially mutate
-                if((*it).mrate()*(*it).genome_size() > random_number())
+                if((*it).mrate()*(*it).genome_size() > randomNumber())
                 {
                     MUTATION_CTR++;
                     if(trackMutations){
@@ -341,7 +339,7 @@ int main(int argc, char *argv[])
         while(Cell_temp.size() < N){
             int s = Cell_temp.size();
             std::vector<PolyCell>::iterator j = Cell_temp.begin();
-            Cell_temp.emplace_back((*(j+random_number()*s)));
+            Cell_temp.emplace_back((*(j+randomNumber()*s)));
             // Need to update fitness if stochasticExpression
             Cell_temp.back().UpdateRates();
         }

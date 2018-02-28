@@ -467,7 +467,7 @@ std::string AdjacentBP(std::string a, int j){
 //		b, old codon
 //		i, mutation site in codon (<3)
 std::string n3_to_n3(std::string a, std::string b, int i){
-  double r = random_number();
+  double r = randomNumber();
   double l;
 
   if ( a == "TAA")
@@ -637,14 +637,14 @@ std::string getBarcode()
 {
     char seq [16];
     for(int i = 0; i < 15; i++){
-        if(random_number()<0.5){
-            if(random_number()<0.5){
+        if(randomNumber()<0.5){
+            if(randomNumber()<0.5){
                 seq[i] = 'G';
             }
             else seq[i] = 'C';
         }
         else{
-            if(random_number()<0.5){
+            if(randomNumber()<0.5){
                 seq[i] = 'A';
             }
             else seq[i] = 'T';
@@ -740,8 +740,8 @@ double Ran_Gaussian(const double mean, const double sigma)
     double x, y, r2;
     do{
         // choose x,y in uniform square [-1,+1]
-        x = -1 + 2 * random_number();
-        y = -1 + 2 * random_number();
+        x = -1 + 2 * randomNumber();
+        y = -1 + 2 * randomNumber();
         // check if it is in the unit circle
         r2 = x * x + y * y;
     }while (r2 > 1.0 || r2 == 0); 

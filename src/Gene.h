@@ -281,7 +281,7 @@ double Gene::Mutate_Stabil_Gaussian(int i, int j)
         exit(2);
     }       
 
-    double ran = random_number();
+    double ran = randomNumber();
        
     if(ran <= fNs){//non-synonymous mutation
         double temp = Ran_Gaussian(1.0, 1.7);
@@ -390,7 +390,7 @@ double Gene::Mutate_Select_Dist(int i, int j)
         exit(2);
     }       
 
-    double ran = random_number();
+    double ran = randomNumber();
        
     if(ran <= fNs){//non-synonymous mutation
         double s = RandomNormal();

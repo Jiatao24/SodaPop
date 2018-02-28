@@ -2,7 +2,6 @@
 #define CELL_H
 
 #include "Gene.h"
-#include "rng.hpp"
 
 /*SodaPop
 Copyright (C) 2017 Louis Gauthier
@@ -227,5 +226,3 @@ int Cell::total_mutations(const int& spec)
 }
 
 #endif
-
-

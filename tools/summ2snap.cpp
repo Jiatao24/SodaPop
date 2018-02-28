@@ -1,5 +1,4 @@
 #include "../src/PolyCell.h"
-#include "../src/rng.hpp"
 
 /*
 DESCRIPTION: Converts population summary to a snap file.
@@ -13,8 +12,6 @@ int main(int argc, char *argv[]){
 
     int flag = atoi(argv[2]);
     assert((flag==0) | (flag==1));
-
-    initialize_rng();
 
     char buffer[200];
     std::vector <PolyCell> Cell_arr;
