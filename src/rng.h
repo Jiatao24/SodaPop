@@ -1,6 +1,6 @@
 // -*- c++ -*-
-#ifndef RNG_HPP
-#define RNG_HPP
+#ifndef RNG_H
+#define RNG_H
 
 #include "pcg/pcg_random.hpp"
 
