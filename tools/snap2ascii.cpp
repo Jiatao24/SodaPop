@@ -1,4 +1,5 @@
 #include "../src/global.h"
+#include "../src/rng.hpp"
 
 // Output into ASCII:
 // Header: frame_time, t0, total_cell_count
@@ -13,6 +14,8 @@ int main(int argc, char *argv[]){
 
     int flag = atoi(argv[3]);
     assert((flag==0) | (flag==1));
+
+    initialize_rng();
 
     int Total_Cell_Count;
     double frame_time, T0;

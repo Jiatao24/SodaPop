@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
-#include "pcg_random.hpp"
 #include <sys/stat.h>
 #include <random/include_headers.h>
 #include <random/gamma.h>
@@ -25,6 +24,8 @@
 #if defined(_WIN32)
 #include <direct.h>   // _mkdir
 #endif
+
+#include "rng.hpp"
 
 /*SodaPop
 Copyright (C) 2017 Louis Gauthier
@@ -46,17 +47,17 @@ Copyright (C) 2017 Louis Gauthier
 #define POPSIZEMAX 	1000000
 #define GENECOUNTMAX 	100
 
-template<class T = std::mt19937, std::size_t N = T::state_size>
-auto ProperlySeededRandomEngine () -> typename std::enable_if<!!N, T>::type {
-    typename T::result_type random_data[N];
-    std::random_device source;
-    std::generate(std::begin(random_data), std::end(random_data), std::ref(source));
-    std::seed_seq seeds(std::begin(random_data), std::end(random_data));
-    T seededEngine (seeds);
-    return seededEngine;
-}
+// template<class T = std::mt19937, std::size_t N = T::state_size>
+// auto ProperlySeededRandomEngine () -> typename std::enable_if<!!N, T>::type {
+//     typename T::result_type random_data[N];
+//     std::random_device source;
+//     std::generate(std::begin(random_data), std::end(random_data), std::ref(source));
+//     std::seed_seq seeds(std::begin(random_data), std::end(random_data));
+//     T seededEngine (seeds);
+//     return seededEngine;
+// }
 
-Ran *uniformdevptr;		// defined in include/random/include_headers.h
+// Ran *uniformdevptr;		// defined in include/random/include_headers.h
 
 /******** PSEUDO RANDOM NUMBER GENERATOR
 
@@ -68,12 +69,12 @@ this RNG provides high quality uniform random floats
 without a significant memory/time penalty
 */
 
-//Set seed source to rand device
-pcg_extras::seed_seq_from<std::random_device> seed_source;
-//Create rng
-pcg32 rng(seed_source);
-//use uniform real dist
-std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
+// //Set seed source to rand device
+// pcg_extras::seed_seq_from<std::random_device> seed_source;
+// //Create rng
+// pcg32 rng(seed_source);
+// //use uniform real dist
+// std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
 
 /******** CONTAINERS AND ITERATORS ********/
 
@@ -132,7 +133,7 @@ std::string GetProtFromNuc(std::string);
 int CheckBP(std::string);
 std::string n3_to_n3(std::string, int);
 std::string getBarcode();
-double RandomNumber();
+// double RandomNumber();
 void InitMatrix();
 void ExtractDDGMatrix(std::string);
 void ExtractDMSMatrix(std::string);
@@ -466,7 +467,7 @@ std::string AdjacentBP(std::string a, int j){
 //		b, old codon
 //		i, mutation site in codon (<3)
 std::string n3_to_n3(std::string a, std::string b, int i){
-  double r = RandomNumber();
+  double r = random_number();
   double l;
 
   if ( a == "TAA")
@@ -636,14 +637,14 @@ std::string getBarcode()
 {
     char seq [16];
     for(int i = 0; i < 15; i++){
-        if(RandomNumber()<0.5){
-            if(RandomNumber()<0.5){
+        if(random_number()<0.5){
+            if(random_number()<0.5){
                 seq[i] = 'G';
             }
             else seq[i] = 'C';
         }
         else{
-            if(RandomNumber()<0.5){
+            if(random_number()<0.5){
                 seq[i] = 'A';
             }
             else seq[i] = 'T';
@@ -728,19 +729,19 @@ void ExtractDMSMatrix(std::string filepath)
     temp.close();
 }
 
-// returns uniformly distributed floating-point random number on interval [0.0,1.0]
-double RandomNumber()
-{
-    return uniform_dist(rng);
-}
+// // returns uniformly distributed floating-point random number on interval [0.0,1.0]
+// double RandomNumber()
+// {
+//     return uniform_dist(rng);
+// }
 
 double Ran_Gaussian(const double mean, const double sigma)
 {
     double x, y, r2;
     do{
         // choose x,y in uniform square [-1,+1]
-        x = -1 + 2 * RandomNumber();
-        y = -1 + 2 * RandomNumber();
+        x = -1 + 2 * random_number();
+        y = -1 + 2 * random_number();
         // check if it is in the unit circle
         r2 = x * x + y * y;
     }while (r2 > 1.0 || r2 == 0); 

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "rng.hpp"
 
 /*SodaPop
 Copyright (C) 2017 Louis Gauthier
@@ -98,7 +99,7 @@ double Gene::scale_ = 1.0;
 double Gene::mean_ = 1.0;
 double Gene::stdev_ = 1.0;
 
-auto engine = ProperlySeededRandomEngine();
+/* auto engine = ProperlySeededRandomEngine(); */
 std::gamma_distribution<double> Gene::gamma_ = std::gamma_distribution<double>(Gene::shape_, Gene::scale_);
 std::normal_distribution<> Gene::normal_ = std::normal_distribution<>(Gene::mean_, Gene::stdev_);
 
@@ -280,7 +281,7 @@ double Gene::Mutate_Stabil_Gaussian(int i, int j)
         exit(2);
     }       
 
-    double ran = RandomNumber();
+    double ran = random_number();
        
     if(ran <= fNs){//non-synonymous mutation
         double temp = Ran_Gaussian(1.0, 1.7);
@@ -389,7 +390,7 @@ double Gene::Mutate_Select_Dist(int i, int j)
         exit(2);
     }       
 
-    double ran = RandomNumber();
+    double ran = random_number();
        
     if(ran <= fNs){//non-synonymous mutation
         double s = RandomNormal();
@@ -480,12 +481,12 @@ void Gene::initNormal()
 
 double Gene::RandomGamma()
 {
-    return Gene::gamma_(engine);
+    return Gene::gamma_(g_rng);
 }
 
 double Gene::RandomNormal()
 {
-    return Gene::normal_(engine);
+    return Gene::normal_(g_rng);
 }
 
 
@@ -541,7 +542,7 @@ double Gene::misfolded(bool stochastic)
 int Gene::update_stochastic_conc()
 {
     stochastic_conc = (int)(0.5 +
-        Gene::gamma_(engine, std::gamma_distribution<double>::param_type(
+        Gene::gamma_(g_rng, std::gamma_distribution<double>::param_type(
                          stochastic_shape, stochastic_scale)));
     return stochastic_conc;
 }

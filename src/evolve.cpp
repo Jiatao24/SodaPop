@@ -1,3 +1,4 @@
+#include "rng.hpp"
 #include "PolyCell.h"
 #include <tclap/CmdLine.h>
 #include <unistd.h>
@@ -39,9 +40,9 @@ int main(int argc, char *argv[])
     std::string geneListFile, genesPath;
     std::string outDir, startSnapFile, matrixFile;
 
-    auto rng = ProperlySeededRandomEngine();
-    Ran rand_uniform(rng());                        
-    uniformdevptr = &rand_uniform;
+    // auto rng = ProperlySeededRandomEngine();
+    // Ran rand_uniform(rng());                        
+    // uniformdevptr = &rand_uniform;
 
     // Wrap everything in a try block
     // errors in input are caught and explained to user
@@ -92,6 +93,9 @@ int main(int argc, char *argv[])
     // boolean switch to use short format for snapshots
     TCLAP::SwitchArg shortArg("s","short-format","Use short format for population snapshots", cmd, false);
 
+    // RNG seed
+    TCLAP::ValueArg<unsigned long> seedArg("", "seed", "Seed value for RNG.", false, 0, "unsigned int (64-bit)");
+
     // Add the arguments to the CmdLine object.
     cmd.add(maxArg);
     cmd.add(popArg);
@@ -120,6 +124,11 @@ int main(int argc, char *argv[])
     genesPath = libArg.getValue();
 
     inputType = inputArg.getValue();
+
+    if (seedArg.isSet())
+        initialize_rng(seedArg.getValue());
+    else
+        initialize_rng();
 
     std::cout << "Begin ... " << std::endl;
     if(inputType == "s")
@@ -289,7 +298,7 @@ int main(int argc, char *argv[])
             // probability parameter of binomial distribution
             std::binomial_distribution<> binCell(N, w);
             // number of progeny k is drawn from binomial distribution with N trials and mean w
-            int k = binCell(rng);
+            int k = binCell(g_rng);
             
             // if nil, the cell will be wiped from the population
             if(k == 0) continue;
@@ -306,7 +315,7 @@ int main(int argc, char *argv[])
             // after filling with children, go through each one for mutation
             while(it < last){
                 // potentially mutate
-                if((*it).mrate()*(*it).genome_size() > RandomNumber())
+                if((*it).mrate()*(*it).genome_size() > random_number())
                 {
                     MUTATION_CTR++;
                     if(trackMutations){
@@ -332,7 +341,7 @@ int main(int argc, char *argv[])
         while(Cell_temp.size() < N){
             int s = Cell_temp.size();
             std::vector<PolyCell>::iterator j = Cell_temp.begin();
-            Cell_temp.emplace_back((*(j+RandomNumber()*s)));
+            Cell_temp.emplace_back((*(j+random_number()*s)));
             // Need to update fitness if stochasticExpression
             Cell_temp.back().UpdateRates();
         }
@@ -340,8 +349,8 @@ int main(int argc, char *argv[])
         // if the population exceeds N
         // cells are randomly shuffled and the vector is shrunk to N
         if(Cell_temp.size() > N){
-            auto engine = std::default_random_engine{};
-            std::shuffle(Cell_temp.begin(), Cell_temp.end(), engine);
+            // auto engine = std::default_random_engine{};
+            std::shuffle(Cell_temp.begin(), Cell_temp.end(), g_rng);
             Cell_temp.resize(N);
         }
 
