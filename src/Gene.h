@@ -1,5 +1,6 @@
+// -*- c++ -*-
 #include "global.h"
-#include "rng.hpp"
+#include "rng.h"
 
 /*SodaPop
 Copyright (C) 2017 Louis Gauthier

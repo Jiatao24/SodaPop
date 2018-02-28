@@ -1,3 +1,4 @@
+// -*- c++ -*-
 #include <stdio.h>
 #include <vector>
 #include <stdlib.h>
@@ -25,7 +26,7 @@
 #include <direct.h>   // _mkdir
 #endif
 
-#include "rng.hpp"
+#include "rng.h"
 
 /*SodaPop
 Copyright (C) 2017 Louis Gauthier

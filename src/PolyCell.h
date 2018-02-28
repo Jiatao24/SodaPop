@@ -1,8 +1,9 @@
+// -*- c++ -*-
 #ifndef POLYCELL_H
 #define POLYCELL_H
 
 #include "Cell.h"
-#include "rng.hpp"
+#include "rng.h"
 
 /*SodaPop
 Copyright (C) 2017 Louis Gauthier

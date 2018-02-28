@@ -1,3 +1,4 @@
+// -*- c++ -*-
 #ifndef RNG_HPP
 #define RNG_HPP
 

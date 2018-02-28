@@ -1,5 +1,5 @@
 #include <random>
-#include "rng.hpp"
+#include "rng.h"
 
 static pcg_extras::seed_seq_from<std::random_device> seedSource;
 static std::uniform_real_distribution<double> uniformDist(0., 1.);

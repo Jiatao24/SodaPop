@@ -1,4 +1,4 @@
-#include "rng.hpp"
+#include "rng.h"
 #include "PolyCell.h"
 #include <tclap/CmdLine.h>
 #include <unistd.h>
