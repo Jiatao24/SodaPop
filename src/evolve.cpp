@@ -1,4 +1,5 @@
 #include "rng.h"
+#include "global.h"
 #include "PolyCell.h"
 #include <tclap/CmdLine.h>
 #include <unistd.h>
@@ -157,7 +158,7 @@ int main(int argc, char *argv[])
             {
                 double mean = alphaArg.getValue();
                 double stddev = betaArg.getValue();
-                Gene::initNormal(mean, stddev);
+                Gene::setNormalParams(mean, stddev);
             }
         }
     }

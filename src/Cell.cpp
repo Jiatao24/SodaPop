@@ -1,4 +1,5 @@
 #include "Cell.h"
+#include "global.h"
 
 Cell::Cell() : barcode_(getBarcode()),
 	       ID_(0),
@@ -120,9 +121,9 @@ Cell::Cell(std::fstream& IN, const std::string& genesPath)
         }
         Gene G(temp);   
         //update gene information
-        G.conc = c;
         dg = exp(-dg/kT);
         G.ch_dg(dg);
+        G.ch_conc(c);
         G.ch_f(f);
         G.Update_Sequences(DNAsequence);
         G.ch_Na(Na);

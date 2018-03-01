@@ -1,3 +1,5 @@
+#include <iostream>
+#include <iomanip>
 #include "PolyCell.h"
 
 // By default the fitness function is set to neutral.
@@ -128,7 +130,7 @@ double PolyCell::stochasticExpression()
     for (auto& it : Gene_arr_)
     {
         it.update_stochastic_conc();
-        if (it.stochastic_conc == 0)
+        if (it.stochastic_conc() == 0)
         {
 	    // Fatal to not express any protein
             return 0;
@@ -163,8 +165,8 @@ void PolyCell::ranmut_Gene(std::ofstream& log,int ctr)
     int site = (int) ( L * randomNumber());
 
     // find the corresponding gene
-    std::vector<Gene>::iterator j = Gene_arr_.begin();
-    VectInt_citerator k = Gene_L_.begin();
+    auto j = Gene_arr_.begin();
+    auto k = Gene_L_.begin();
 
     if(site >= (*k)){
     // random number generated is greater than
@@ -212,12 +214,12 @@ void PolyCell::ranmut_Gene(std::ofstream& log,int ctr)
     // save beneficial mutations to log
     // we could save all mutations with abs(s) >= some value x
     log << barcode().c_str() << "\t";
-    log << fixed;		// this std::fixed; output fixed amount of zeros
+    log << std::fixed;		// this std::fixed; output fixed amount of zeros
     log << mutation << "\t";
     // if it's a nonsyn mutation, mutation is a tab-separated string
     // gene_number, current residue, residue number, new residue
     log << s << "\t";		// fitness difference f - i
-    log << ctr << endl;		// generation count
+    log << ctr << std::endl;		// generation count
 }
 
 void PolyCell::ranmut_Gene()
@@ -225,17 +227,20 @@ void PolyCell::ranmut_Gene()
     // get genome size
     int L = Gene_L_.back();
     // pick random site to mutate
-    int site = (int) ( L * randomNumber());
+    int site = (int) (L * randomNumber());
 
     // find the corresponding gene
     std::vector<Gene>::iterator j = Gene_arr_.begin();
-    VectInt_citerator k = Gene_L_.begin();
+    auto k = Gene_L_.begin();
 
-    if(site >= (*k)){
+    if (site >= (*k))
+    {
     // random number generated is greater than
     // the cummulative sum of genes
-         for(k = Gene_L_.begin(); k != Gene_L_.end(); ++k){
-             if( site<(*k) ) break;
+         for (k = Gene_L_.begin(); k != Gene_L_.end(); ++k)
+         {
+             if (site < *k)
+                 break;
              j++; 
          }        
          k--;
@@ -244,26 +249,26 @@ void PolyCell::ranmut_Gene()
 
     int bp = (int) (3 * randomNumber());
     // what is the input type?
-    if(fromS_)
+    if (fromS_)
     {
-        if(useDist_)
+        if (useDist_)
         {
-            (*j).Mutate_Select_Dist(site,bp);
+            (*j).Mutate_Select_Dist(site, bp);
         }
         else
         {
-            (*j).Mutate_Select(site,bp);
+            (*j).Mutate_Select(site, bp);
         }
     }
     else
     {
-        if(useDist_)
+        if (useDist_)
         {
-            (*j).Mutate_Stabil_Gaussian(site,bp);
+            (*j).Mutate_Stabil_Gaussian(site, bp);
         }
         else
         {
-            (*j).Mutate_Stabil(site,bp);
+            (*j).Mutate_Stabil(site, bp);
         }
     }
          
@@ -302,9 +307,9 @@ void PolyCell::dump(std::fstream& OUT, int cell_index)
 
    for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i){
         int gene_nid = i->num();
-        double s = i->e;
-        double c = i->conc;
-	int stoc_conc = i->stochastic_conc;
+        double s = i->e();
+        double c = i->conc();
+	int stoc_conc = i->stochastic_conc();
         double dg = -kT*log(i->dg());
         double f = i->f();
 
@@ -359,9 +364,9 @@ void PolyCell::PrintCell(int cell_ndx)
       {
         //cout << "X ";
         int gene_nid = i->num();
-        double e = i->e;
-        double c = i->conc;
-        double dg = -kT*log(i->dg());
+        double e = i->e();
+        double c = i->conc();
+        double dg = -kT * log(i->dg());
         int Ns = i->Ns();
         int Na = i->Na();
            

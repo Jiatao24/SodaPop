@@ -1,4 +1,5 @@
 #include "Gene.h"
+#include "global.h"
 
 std::gamma_distribution<> Gene::gamma_ = std::gamma_distribution<>(1.0, 1.0);
 std::normal_distribution<> Gene::normal_ = std::normal_distribution<>(1.0, 1.0);
@@ -14,8 +15,8 @@ Gene::Gene()
       nucseq_ = ""; 
       dg_ = 1;
       f_ = 1;
-      conc = 1;
-      e = 0;
+      conc_ = 1;
+      e_ = 0;
 }
 
 // Input: gene number, nuc. sequence, concentration
@@ -45,13 +46,13 @@ Gene::Gene(const int g_num, const std::string nucseq, double conc) :
         dg_ = 1;
         f_ = 1;
         stochastic_conc_ = conc_;
-        e = 0;
+        e_ = 0;
         Na_ = 0;
         Ns_ = 0;
     }
 }
 
-//Input: gene file
+// Input: gene file
 Gene::Gene(std::fstream& gene_in)
 {
     std::string line;
@@ -95,13 +96,13 @@ Gene::Gene(std::fstream& gene_in)
         else if (word == "E")
         {
             iss >> word;
-            e = atoi(word.c_str());
+            e_ = atoi(word.c_str());
         }
         else if (word == "CONC")
         {
             iss >> word;
             conc_ = atof(word.c_str());
-            stochastic_conc_ = conc;
+            stochastic_conc_ = conc_;
         }
         else if (word == "DG")
         { 
@@ -154,13 +155,14 @@ Gene::Gene(const Gene& G)
 bool Gene::operator== (Gene& G) 
 {
     std::string temp = G.nseq();
-    if ( (temp.compare(nucseq_) == 0) && (conc == G.conc) )
+    if ( (temp.compare(nucseq_) == 0) && (conc_ == G.conc_) )
 	return true;
     else
 	return false;
 }
 
 // assignment overloading
+// Do we need this?
 Gene& Gene::operator=(const Gene& A)
 { 
     if (this != &A){
@@ -172,7 +174,7 @@ Gene& Gene::operator=(const Gene& A)
         this->stochastic_shape_ = A.stochastic_shape_;
         this->stochastic_scale_ = A.stochastic_scale_;
         this->stochastic_conc_ = A.stochastic_conc_;
-        this->conc = A.conc;
+        this->conc_ = A.conc_;
         this->e_ = A.e_;
         this->Na_ = A.Na_;
         this->Ns_ = A.Ns_;
@@ -453,7 +455,7 @@ double Gene::misfolded(bool stochastic)
 }
 
 // Draw a new value for stochastic concentration
-int Gene::update_stochastic_conc()
+double Gene::update_stochastic_conc()
 {
     stochastic_conc_ = (int)(0.5
 			     + Gene::gamma_(

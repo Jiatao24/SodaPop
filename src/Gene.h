@@ -44,20 +44,26 @@ public:
 
     void Update_Sequences(std::string);
  
-    const int num(){return g_num_;}
-    const int length(){return ln_;}
-    const int AAlength(){return la_;}
-    const int Ns(){return Ns_;}
-    const int Na(){return Na_;}
-    const std::string nseq(){return nucseq_;}
-    const double dg(){return dg_;}
-    const double f(){return f_;}
+    void ch_dg(const double a) {dg_ = a;}
+    void ch_conc(const double c) {conc_ = c;}
+    void ch_f(const double a) { f_ = a; }
+    void ch_Na(const int a) { Na_ = a; }
+    void ch_Ns(const int a) { Ns_ = a; }
 
-    const double conc() {return conc_};
-    const double stochastic_conc() {return stochastic_conc_};
+    int num() const {return g_num_;}
+    int length() const {return ln_;}
+    int AAlength() const {return la_;}
+    int Ns() const {return Ns_;}
+    int Na() const {return Na_;}
+    std::string nseq() const {return nucseq_;}
+    double dg() const {return dg_;}
+    double f() const {return f_;}
+
+    double conc() const {return conc_;}
+    double stochastic_conc() const {return stochastic_conc_;}
     double update_stochastic_conc();
 
-    const e() {return e_};
+    double e() const {return e_;}
 
     double CheckDG();
     double Pnat();
