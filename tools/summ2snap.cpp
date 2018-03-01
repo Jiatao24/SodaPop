@@ -77,7 +77,7 @@ int main(int argc, char *argv[]){
     OUT.write((char*)(&Total_Cell_Count),sizeof(int));
 
     int l=0;
-    for(std::vector<PolyCell>::iterator k = Cell_arr.begin(); k != Cell_arr.end(); ++k){
+    for (auto k = Cell_arr.begin(); k != Cell_arr.end(); ++k){
         ++l;
         (*k).dump(OUT,l);
     }

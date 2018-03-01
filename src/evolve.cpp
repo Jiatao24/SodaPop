@@ -147,17 +147,17 @@ int main(int argc, char *argv[])
         else
         {
             PolyCell::useDist_ = true;
-            if(gammaArg.isSet())
+            if (gammaArg.isSet())
             {
-                Gene::shape_ = alphaArg.getValue();
-                Gene::scale_ = betaArg.getValue();
-                Gene::initGamma();
+                double shape = alphaArg.getValue();
+                double scale = betaArg.getValue();
+                Gene::setGammaParams(shape, scale);
             }
-            else if(normalArg.isSet())
+            else if (normalArg.isSet())
             {
-                Gene::mean_ = alphaArg.getValue();
-                Gene::stdev_ = betaArg.getValue();
-                Gene::initNormal();
+                double mean = alphaArg.getValue();
+                double stddev = betaArg.getValue();
+                Gene::initNormal(mean, stddev);
             }
         }
     }

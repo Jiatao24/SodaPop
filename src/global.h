@@ -1,4 +1,7 @@
 // -*- c++ -*-
+#ifndef GLOBAL_H
+#define GLOBAL_H
+
 #include <stdio.h>
 #include <vector>
 #include <stdlib.h>
@@ -973,3 +976,5 @@ bool makePath(const std::string& path)
         return false;
     }
 }
+
+#endif  // GLOBAL_H

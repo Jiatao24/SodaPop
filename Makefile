@@ -27,17 +27,24 @@ uninstall:
 	$(RM) -r $(INSTALLDIR)/$(SNAP2ASCII)
 	$(RM) -r $(INSTALLDIR)/$(SUMM2SNAP)
 
-$(SODAPOP): sodapop.o rng.o Cell.o
-	$(LINK) -o sodapop sodapop.o rng.o Cell.o
-$(SNAP2ASCII): snap2ascii.o rng.o Cell.o
-	$(LINK) -o sodasnap snap2ascii.o rng.o Cell.o
-$(SUMM2SNAP): summ2snap.o rng.o Cell.o
-	$(LINK) -o sodasumm summ2snap.o rng.o Cell.o
+$(SODAPOP): sodapop.o rng.o Cell.o PolyCell.o Gene.o
+	$(LINK) -o sodapop sodapop.o rng.o Cell.o PolyCell.o Gene.o
+$(SNAP2ASCII): snap2ascii.o rng.o Cell.o PolyCell.o Gene.o
+	$(LINK) -o sodasnap snap2ascii.o rng.o Cell.o PolyCell.o Gene.o
+$(SUMM2SNAP): summ2snap.o rng.o Cell.o PolyCell.o Gene.o
+	$(LINK) -o sodasumm summ2snap.o rng.o Cell.o PolyCell.o Gene.o
 
 rng.o: ./src/rng.cpp
 	$(COMPILE) -o rng.o ./src/rng.cpp
 Cell.o: ./src/Cell.cpp
 	$(COMPILE) ./src/Cell.cpp
+PolyCell.o: ./src/PolyCell.cpp
+	$(COMPILE) ./src/PolyCell.cpp
+Gene.o: ./src/Gene.cpp
+	$(COMPILE) ./src/Gene.cpp
+global.o: ./src/global.cpp
+	$(COMPILE) ./src/global.cpp
+
 sodapop.o: ./src/evolve.cpp ./src/Gene.h ./src/Cell.h ./src/global.h
 	$(COMPILE) -o sodapop.o ./src/evolve.cpp
 snap2ascii.o: ./tools/snap2ascii.cpp ./src/global.h
