@@ -1,8 +1,10 @@
+#include <unistd.h>
+
+#include <tclap/CmdLine.h>
+
 #include "rng.h"
 #include "global.h"
 #include "PolyCell.h"
-#include <tclap/CmdLine.h>
-#include <unistd.h>
 
 /*SodaPop
 

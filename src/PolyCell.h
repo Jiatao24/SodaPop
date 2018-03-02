@@ -3,7 +3,6 @@
 #define POLYCELL_H
 
 #include "Cell.h"
-#include "rng.h"
 
 /*SodaPop
 Copyright (C) 2017 Louis Gauthier
@@ -45,7 +44,7 @@ public:
     double multiplicative();
     double neutral();
     double stochasticExpression();
-    const double fitness();
+    double fitness();           // Getter for fitness
     void UpdateRates();		// This function updates fitness_.
 
     void ranmut_Gene();

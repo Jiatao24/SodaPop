@@ -1,6 +1,9 @@
 #include <iostream>
 #include <iomanip>
+#include <stdio.h>
+
 #include "PolyCell.h"
+#include "rng.h"
 
 // By default the fitness function is set to neutral.
 int PolyCell::ff_ = 5;
@@ -12,22 +15,24 @@ PolyCell::PolyCell()
 {
 }
 
+// Construct from cell file.
 PolyCell::PolyCell(std::fstream& f) : Cell(f)
 {
     selectFitness();
-	// Update current rates
-  	this->UpdateRates();  
-  	// Fill gene length array
-  	this->FillGene_L();
+    // Update current rates
+    this->UpdateRates();  
+    // Fill gene length array
+    this->FillGene_L();
 }    
 
+// Construct from cell file in binary and gene path.
 PolyCell::PolyCell(std::fstream& f, const std::string& s) : Cell(f,s)
 {
     selectFitness();
-	// Update current rates
-  	this->UpdateRates();  
-  	// Fill gene length array
-  	this->FillGene_L();
+    // Update current rates
+    this->UpdateRates();  
+    // Fill gene length array
+    this->FillGene_L();
 }
 
 // Initialize the cummulative gene length array
@@ -146,7 +151,7 @@ double PolyCell::stochasticExpression()
     return (fitness < 0) ? 0 : fitness;
 }
 
-const double PolyCell::fitness()
+double PolyCell::fitness()
 {
     return fitness_;
 }

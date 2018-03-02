@@ -2,7 +2,6 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#include <stdio.h>
 #include <vector>
 #include <stdlib.h>
 #include <iostream>
@@ -116,7 +115,7 @@ bool makePath(const std::string&);
 // these const mappings are hard-coded
 
 struct codon_to_num{
-    static std::map<std::string,int> create_map();
+    static  std::map<std::string,int> create_map();
     static const std::map<std::string,int> cnum;
 };
 

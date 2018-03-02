@@ -1,7 +1,9 @@
 // -*- c++ -*-
 #ifndef GENE_H
 #define GENE_H
-#include "global.h"
+
+#include <random>
+
 #include "rng.h"
 
 /*SodaPop

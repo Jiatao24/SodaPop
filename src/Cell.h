@@ -2,6 +2,7 @@
 #ifndef CELL_H
 #define CELL_H
 
+#include "global.h"
 #include "Gene.h"
 
 /*SodaPop
@@ -36,11 +37,11 @@ public:
     virtual void PrintCell(int) = 0;       
              
     // Getters
-    const int ID() {return ID_;}
-    const double mrate() {return c_mrate_;}
-    const int gene_count() {return Gene_arr_.size();}
-    const int genome_size() {return Gene_L_.back();}
-    const std::string barcode() {return barcode_;}   
+    int ID() {return ID_;}
+    double mrate() {return c_mrate_;}
+    int gene_count() {return Gene_arr_.size();}
+    int genome_size() {return Gene_L_.back();}
+    std::string barcode() {return barcode_;}   
 
     // Setters
     void change_ID(int a) {ID_ = a;}

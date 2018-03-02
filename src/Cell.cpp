@@ -1,5 +1,4 @@
 #include "Cell.h"
-#include "global.h"
 
 Cell::Cell() : barcode_(getBarcode()),
 	       ID_(0),
@@ -122,6 +121,8 @@ Cell::Cell(std::fstream& IN, const std::string& genesPath)
         Gene G(temp);   
         //update gene information
         dg = exp(-dg/kT);
+        // Ideally we should have a Gene constructor instead of
+        //   functions that set these private variables.
         G.ch_dg(dg);
         G.ch_conc(c);
         G.ch_f(f);
