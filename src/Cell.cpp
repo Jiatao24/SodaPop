@@ -10,7 +10,7 @@ Cell::Cell() : barcode_(getBarcode()),
 }
 
 
-// Construct from cell file.
+// Construct from cell file (text description).
 Cell::Cell(std::fstream& cell_in)
 {
     char buffer[140];

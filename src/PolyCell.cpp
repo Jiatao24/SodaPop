@@ -15,7 +15,7 @@ PolyCell::PolyCell()
 {
 }
 
-// Construct from cell file.
+// Construct from cell file (text description).
 PolyCell::PolyCell(std::fstream& f) : Cell(f)
 {
     selectFitness();
@@ -35,7 +35,7 @@ PolyCell::PolyCell(std::fstream& f, const std::string& s) : Cell(f,s)
     this->FillGene_L();
 }
 
-// Initialize the cummulative gene length array
+// Initialize the cumulative gene length array
 void PolyCell::FillGene_L()
 {
     int sum = 0;
@@ -73,9 +73,9 @@ double PolyCell::flux()
     //sum (concentration*Pnat) over all genes
     for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
     {
-        f = f + 1/(i->functional());
+        f += 1 / (i->functional());
     }
-    return exp(A_FACTOR/f-1);
+    return exp(A_FACTOR / f - 1);
 }
 
 // TOXICITY FITNESS FUNCTION
