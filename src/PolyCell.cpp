@@ -26,7 +26,7 @@ PolyCell::PolyCell(std::fstream& f) : Cell(f)
 }    
 
 // Construct from cell file in binary and gene path.
-PolyCell::PolyCell(std::fstream& f, const std::string& s) : Cell(f,s)
+PolyCell::PolyCell(std::fstream& f, const std::string& s) : Cell(f, s)
 {
     selectFitness();
     // Update current rates
@@ -60,6 +60,8 @@ void PolyCell::selectFitness()
     case 5: fit = &PolyCell::neutral;
         break;
     case 6: fit = &PolyCell::stochasticExpression;
+        break;
+    case 7: fit = &PolyCell::stochasticExpression2;
         break;
     default:
         ;
@@ -134,7 +136,31 @@ double PolyCell::stochasticExpression()
     double toxicity = 0;
     for (auto& it : Gene_arr_)
     {
-        it.update_stochastic_conc();
+        it.update_stochastic_conc_gamma();
+        if (it.stochastic_conc() == 0)
+        {
+	    // Fatal to not express any protein
+            return 0;
+        }
+        flux += 1 / it.functional(true);
+        toxicity += it.misfolded(true);
+    }
+
+    flux = A_FACTOR / flux;
+    toxicity = COST * toxicity;
+    
+    double fitness = flux - toxicity;
+    return (fitness < 0) ? 0 : fitness;
+}
+
+// STOCHASTIC PROTEIN EXPRESSION
+double PolyCell::stochasticExpression2()
+{
+    double flux = 0;
+    double toxicity = 0;
+    for (auto& it : Gene_arr_)
+    {
+        it.update_stochastic_conc_OU();
         if (it.stochastic_conc() == 0)
         {
 	    // Fatal to not express any protein

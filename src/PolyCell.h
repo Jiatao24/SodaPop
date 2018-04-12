@@ -44,6 +44,7 @@ public:
     double multiplicative();
     double neutral();
     double stochasticExpression();
+    double stochasticExpression2();
     double fitness();           // Getter for fitness
     void UpdateRates();		// This function updates fitness_.
 

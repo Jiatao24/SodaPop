@@ -49,8 +49,7 @@ Cell::Cell(std::fstream& cell_in)
 		  std::cerr << "File could not be open: " << buffer << std::endl;
 		  exit(2);
               }
-              Gene A(temp);
-              Gene_arr_.push_back(A);
+              Gene_arr_.emplace_back(temp);
               std::cout << "Inserted: "<< word << std::endl;
               
               // Check if gene is correctly inserted.
@@ -114,7 +113,8 @@ Cell::Cell(std::fstream& IN, const std::string& genesPath)
      
         sprintf(buffer, "%s%d.gene", genesPath.c_str(), gene_nid);
         std::fstream temp (buffer);
-        if (!temp.is_open()){
+        if (!temp.is_open())
+        {
             std::cerr << "ERROR: Cannot open gene file " << buffer << std::endl;
             exit(2);
         }
@@ -122,7 +122,7 @@ Cell::Cell(std::fstream& IN, const std::string& genesPath)
         //update gene information
         dg = exp(-dg/kT);
         // Ideally we should have a Gene constructor instead of
-        //   functions that set these private variables.
+        //   setters for these private variables.
         G.ch_dg(dg);
         G.ch_conc(c);
         G.ch_f(f);
