@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
         setRngSeed(seedArg.getValue());
 
     std::cout << "Begin ... " << std::endl;
-    if(inputType == "s")
+    if (inputType == "s")
     {
         PolyCell::fromS_ = true;
         PolyCell::ff_ = 4;
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-    else if(inputType == "stability")
+    else if (inputType == "stability")
     {
         std::cout << "Initializing matrix ..." << std::endl;
         InitMatrix();
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
         LoadPrimordialGenes(geneListFile,genesPath);
         PolyCell::ff_ = fitArg.getValue();
         // if DDG matrix is given
-        if(matrixArg.isSet())
+        if (matrixArg.isSet())
         {
             matrixFile = matrixArg.getValue();
             std::cout << "Extracting PDDG matrix ..." << std::endl;
@@ -189,12 +189,17 @@ int main(int argc, char *argv[])
     useShort = shortArg.getValue();
     createPop = initArg.getValue();
 
-    }catch (TCLAP::ArgException &e){
-        std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;}
+    }
+    catch (TCLAP::ArgException &e)
+    {
+        std::cerr << "error: " << e.error() << " for arg " << e.argId()
+                  << std::endl;
+    }
 
     std::cout << "Opening starting population snapshot ..." << std::endl;
-    std::fstream startsnap (startSnapFile.c_str(),std::ios::in|std::ios::binary);
-    if (!startsnap.is_open()){
+    std::fstream startsnap(startSnapFile.c_str(), std::ios::in|std::ios::binary);
+    if (!startsnap.is_open())
+    {
         std::cerr << "File could not be open: "<< startSnapFile << std::endl;
         exit(2);
     }
@@ -202,70 +207,80 @@ int main(int argc, char *argv[])
     // header
     int Total_Cell_Count;
     double frame_time;
-    startsnap.read((char*)(&frame_time),sizeof(double));
-    startsnap.read((char*)(&TIME),sizeof(double));
-    startsnap.read((char*)(&Total_Cell_Count),sizeof(int));
+    startsnap.read((char*)(&frame_time), sizeof(double));
+    startsnap.read((char*)(&TIME), sizeof(double));
+    startsnap.read((char*)(&Total_Cell_Count), sizeof(int));
 
-    sprintf(buffer,"out/%s/snapshots",outDir.c_str());
+    sprintf(buffer, "out/%s/snapshots", outDir.c_str());
     std::string outPath = buffer;
-    std::cout << "Creating directory " << outPath << " ... " << (makePath(outPath) ? "OK" : "failed") << std::endl;
+    std::cout << "Creating directory " << outPath << " ... "
+              << (makePath(outPath) ? "OK" : "failed") << std::endl;
 
-    std::vector <PolyCell> Cell_arr;
+    std::vector<PolyCell> Cell_arr;
     double w_sum = 0;
 
     // IF POPULATION IS INITIALLY MONOCLONAL
     // CREATE VECTOR WITH N IDENTICAL CELLS
-    // MINOR COMPUTATIONAL PENALTY DUE TO REATTRIBUTION OF BARCODES (BELOW)
-    // BUT LARGELY OFFSET BY QUASI-INSTANTANEOUS INITIALIZATION OF VECTOR
-    if(createPop){
-        std::cout << "Creating a population of " << N << " cells ..." << std::endl;
+    if (createPop)
+    {
+        std::cout << "Creating a population of " << N << " cells ..."
+                  << std::endl;
         PolyCell A(startsnap, genesPath);
-        Cell_arr.reserve(N);
-        Cell_arr = std::vector <PolyCell>(N,A);
-        for(std::vector<PolyCell>::iterator k = Cell_arr.begin(); k != Cell_arr.end(); ++k){
-             (*k).ch_barcode(getBarcode());
+        Cell_arr = std::vector<PolyCell>(N, A);
+        for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
+        {
+             it->ch_barcode(getBarcode());
         } 
     }
-    else{
+    else
+    {
         // ELSE IT MUST BE POPULATED CELL BY CELL FROM SNAP FILE
         Cell_arr.reserve(N);
-        int i=0;
-        std::cout << "Constructing population from source " << startSnapFile.c_str() << " ..." << std::endl;
-        while( i<Total_Cell_Count && !startsnap.eof()){
-            PolyCell A(startsnap, genesPath);
-            i++;
-            Cell_arr.emplace_back(A);
+        int count = 0;
+        std::cout << "Constructing population from source "
+                  << startSnapFile.c_str() << " ..." << std::endl;
+        while (count < Total_Cell_Count && !startsnap.eof())
+        {
+            Cell_arr.emplace_back(startsnap, genesPath);
+            count++;
         }
     }
     startsnap.close();
+
     std::cout << "Saving initial population snapshot ... " << std::endl;
     // save initial population snapshot
-    sprintf(buffer,"%s/%s.gen%010d.snap",outPath.c_str(),outDir.c_str(), GENERATION_CTR); 
+    sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
+            outDir.c_str(), GENERATION_CTR); 
 
     // Open snapshot file
     std::fstream OUT2(buffer, std::ios::out | std::ios::binary);
-    if (!OUT2.is_open()){
+    if (!OUT2.is_open())
+    {
          std::cerr << "Snapshot file could not be opened";
          exit(1);
     }
 
     Total_Cell_Count = Cell_arr.size();
-    OUT2.write((char*)(&frame_time),sizeof(double));
-    OUT2.write((char*)(&TIME),sizeof(double));
-    OUT2.write((char*)(&Total_Cell_Count),sizeof(int));
+    OUT2.write((char*)(&frame_time), sizeof(double));
+    OUT2.write((char*)(&TIME), sizeof(double));
+    OUT2.write((char*)(&Total_Cell_Count), sizeof(int));
 
-    if(useShort){
-        for(std::vector<PolyCell>::iterator k = Cell_arr.begin(); k != Cell_arr.end(); ++k){
-            w_sum += (*k).fitness();
-            (*k).dumpShort(OUT2);
+    if (useShort)
+    {
+        for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
+        {
+            w_sum += it->fitness();
+            it->dumpShort(OUT2);
         } 
     }
-    else{
+    else
+    {
         int l=1;
         // dump snapshot of initial population and get sum of fitnesses
-        for(std::vector<PolyCell>::iterator k = Cell_arr.begin(); k != Cell_arr.end(); ++k){
-            w_sum += (*k).fitness();
-            (*k).dump(OUT2,l);
+        for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
+        {
+            w_sum += it->fitness();
+            it->dump(OUT2, l);
             l++;
         } 
     }
@@ -273,11 +288,13 @@ int main(int argc, char *argv[])
     OUT2.close();   
 
     std::ofstream MUTATIONLOG;
-    if(trackMutations){
+    if (trackMutations)
+    {
         // Open MUTATION LOG
-        sprintf(buffer, "out/%s/MUTATION_LOG",outDir.c_str());
+        sprintf(buffer, "out/%s/MUTATION_LOG", outDir.c_str());
         MUTATIONLOG.open(buffer);
-        if ( !MUTATIONLOG.is_open() ) {
+        if (!MUTATIONLOG.is_open())
+        {
             std::cerr << "Mutation log file could not be opened";
             exit(1);
         }
@@ -286,45 +303,53 @@ int main(int argc, char *argv[])
     std::cout << "Starting evolution ..." << std::endl;
 
     // PSEUDO WRIGHT-FISHER PROCESS
-    while(GENERATION_CTR < GENERATION_MAX){
+    while (GENERATION_CTR < GENERATION_MAX)
+    {
         std::vector<PolyCell> Cell_temp;
         // reserve 2N to allow overflow and prevent segfault
+        // (unnecessary, stl containers shouldn't have this problem - VZ)
         Cell_temp.reserve(N*2);
         // for each cell in the population
 
-        for(std::vector<PolyCell>::iterator j = Cell_arr.begin(); j != Cell_arr.end(); ++j)
+        for (auto cell_it = Cell_arr.begin(); cell_it != Cell_arr.end();
+             ++cell_it)
         {
             // fitness of cell j with respect to sum of population fitness
-            double w = (*j).fitness()/w_sum;
+            double relative_fitness = cell_it->fitness() / w_sum;
             // probability parameter of binomial distribution
-            std::binomial_distribution<> binCell(N, w);
-            // number of progeny k is drawn from binomial distribution with N trials and mean w
-            int k = binCell(g_rng);
+            std::binomial_distribution<> binCell(N, relative_fitness);
+            // number of progeny k is drawn from binomial distribution
+            // with N trials and mean w=relative_fitness
+            int n_progeny = binCell(g_rng);
             
             // if nil, the cell will be wiped from the population
-            if(k == 0) continue;
+            if (n_progeny == 0)
+                continue;
 
             // iterator to current available position
-            std::vector<PolyCell>::iterator it = end(Cell_temp);
+            auto it = std::end(Cell_temp);
 
             // iterator to end position of fill
-            std::vector<PolyCell>::iterator last = it + k;
+            auto last = it + n_progeny;
 
-            // fill vector with k times the current cell
-            std::fill_n(std::back_inserter(Cell_temp),k,(*j));
+            // fill vector with n_progeny times the current cell
+            std::fill_n(std::back_inserter(Cell_temp), n_progeny, (*cell_it));
 
             // after filling with children, go through each one for mutation
-            while(it < last){
+            while (it < last)
+            {
                 // potentially mutate
-                if((*it).mrate()*(*it).genome_size() > randomNumber())
+                if (it->mrate() * it->genome_size() > randomNumber())
                 {
                     MUTATION_CTR++;
-                    if(trackMutations){
+                    if (trackMutations)
+                    {
                         // mutate and write mutation to file
-                        (*it).ranmut_Gene(MUTATIONLOG,GENERATION_CTR);
+                        it->ranmut_Gene(MUTATIONLOG, GENERATION_CTR);
                     }
-                    else{
-                        (*it).ranmut_Gene();
+                    else
+                    {
+                        it->ranmut_Gene();
                     }       
                 }
                 else
@@ -333,68 +358,77 @@ int main(int argc, char *argv[])
                     // In stochastic gene expression, fitness will change.
                     it->UpdateRates();
                 }
-                std::advance(it,1); // why not just it++?
+                std::advance(it, 1); // why not just it++?
             }
         }
 
         // if the population is below N
         // randomly draw from progeny to pad
-        while(Cell_temp.size() < N){
-            int s = Cell_temp.size();
-            std::vector<PolyCell>::iterator j = Cell_temp.begin();
-            Cell_temp.emplace_back((*(j+randomNumber()*s)));
+        while (Cell_temp.size() < N)
+        {
+            auto cell_it = Cell_temp.begin();
+            Cell_temp.emplace_back(
+                (*(cell_it + randomNumber()*Cell_temp.size())));
             // Need to update fitness if stochasticExpression
             Cell_temp.back().UpdateRates();
         }
 
         // if the population exceeds N
         // cells are randomly shuffled and the vector is shrunk to N
-        if(Cell_temp.size() > N){
-            // auto engine = std::default_random_engine{};
+        if (Cell_temp.size() > N)
+        {
             std::shuffle(Cell_temp.begin(), Cell_temp.end(), g_rng);
             Cell_temp.resize(N);
         }
 
         Total_Cell_Count = (int)(Cell_temp.size());
-        assert(Total_Cell_Count == N);
+        assert (Total_Cell_Count == N);
         // swap population with initial vector
         Cell_arr.swap(Cell_temp);
 
         // reset and update w_sum
         // update Ns and Na for each cell
         w_sum = 0;
-        for(std::vector<PolyCell>::iterator k = Cell_arr.begin(); k != Cell_arr.end(); ++k){
-            w_sum += (*k).fitness();
-            (*k).UpdateNsNa();
+        for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
+        {
+            w_sum += it->fitness();
+            it->UpdateNsNa();
         }
         
         // update generation counter
         GENERATION_CTR++; 
         // save population snapshot every DT generations
-        if( (GENERATION_CTR % DT) == 0){
-             sprintf(buffer,"%s/%s.gen%010d.snap",outPath.c_str(),outDir.c_str(), GENERATION_CTR); 
+        if ((GENERATION_CTR % DT) == 0)
+        {
+             sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
+                     outDir.c_str(), GENERATION_CTR); 
 
-             //Open snapshot file
+             // Open snapshot file
              std::fstream OUT2(buffer, std::ios::out | std::ios::binary);
-             if (!OUT2.is_open()){
+             if (!OUT2.is_open())
+             {
                  std::cerr << "Snapshot file could not be opened";
                  exit(1);
              }
       
              double frame_time = GENERATION_CTR;
-             OUT2.write((char*)(&frame_time),sizeof(double));
-             OUT2.write((char*)(&TIME),sizeof(double));
-             OUT2.write((char*)(&Total_Cell_Count),sizeof(int));
+             OUT2.write((char*)(&frame_time), sizeof(double));
+             OUT2.write((char*)(&TIME), sizeof(double));
+             OUT2.write((char*)(&Total_Cell_Count), sizeof(int));
 
-             if(useShort){
-                    for(std::vector<PolyCell>::iterator k = Cell_arr.begin(); k != Cell_arr.end(); ++k){
-                     (*k).dumpShort(OUT2);
-                } 
+             if (useShort)
+             {
+                    for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
+                    {
+                     it->dumpShort(OUT2);
+                    } 
              }
-             else{
+             else
+             {
                 int l=1;
-                for(std::vector<PolyCell>::iterator k = Cell_arr.begin(); k != Cell_arr.end(); ++k){
-                    (*k).dump(OUT2,l);
+                for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
+                {
+                    it->dump(OUT2,l);
                     l++;
                 }
              }
@@ -406,8 +440,10 @@ int main(int argc, char *argv[])
     MUTATIONLOG.close();
     std::cout << "Done." << std::endl;
     std::cout << "Total number of mutation events: " << MUTATION_CTR << std::endl;
+
     // if the user toggled analysis, call shell script
-    if(enableAnalysis){
+    if (enableAnalysis)
+    {
         std::string script = "/path/to/barcodes.sh";
         std::string command = script+" "+outDir+" "+std::to_string(GENERATION_MAX)+" "+std::to_string(N)+" "+std::to_string(DT)+" "+std::to_string((int) useShort);
         std::cout << "Call analysis using the following command:" << std::endl;
