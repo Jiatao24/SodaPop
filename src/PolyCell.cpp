@@ -129,7 +129,7 @@ double PolyCell::multiplicative()
 double PolyCell::neutral()
 {
     return 1;
-}o
+}
 
 // STOCHASTIC PROTEIN EXPRESSION
 // it's basically metabolicOutput with stochastic concentration
