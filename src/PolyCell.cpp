@@ -61,7 +61,9 @@ void PolyCell::selectFitness()
         break;
     case 6: fit = &PolyCell::stochasticExpression;
         break;
-    case 7: fit = &PolyCell::stochasticExpression2;
+    case 7: fit = &PolyCell::enzymaticOutput;
+        break;
+    case 8: fit = &PolyCell::stochasticEnzymaticOutput;
         break;
     default:
         ;
@@ -127,9 +129,10 @@ double PolyCell::multiplicative()
 double PolyCell::neutral()
 {
     return 1;
-}
+}o
 
 // STOCHASTIC PROTEIN EXPRESSION
+// it's basically metabolicOutput with stochastic concentration
 double PolyCell::stochasticExpression()
 {
     double flux = 0;
@@ -153,28 +156,23 @@ double PolyCell::stochasticExpression()
     return (fitness < 0) ? 0 : fitness;
 }
 
-// STOCHASTIC PROTEIN EXPRESSION
-double PolyCell::stochasticExpression2()
+// ENZYMATIC OUTPUT (Presumes that there is only a single gene)
+double PolyCell::enzymaticOutput()
 {
-    double flux = 0;
-    double toxicity = 0;
-    for (auto& it : Gene_arr_)
-    {
-        it.update_stochastic_conc_OU();
-        if (it.stochastic_conc() == 0)
-        {
-	    // Fatal to not express any protein
-            return 0;
-        }
-        flux += 1 / it.functional(true);
-        toxicity += it.misfolded(true);
-    }
+    auto first_gene = Gene_arr_.front();
+    double fitness = first_gene.functional()
+        / (X_FACTOR + first_gene.functional());
+    return fitness;
+}
 
-    flux = A_FACTOR / flux;
-    toxicity = COST * toxicity;
-    
-    double fitness = flux - toxicity;
-    return (fitness < 0) ? 0 : fitness;
+// STOCHASTIC ENZYMATIC OUTPUT (Presumes that there is only a single gene)
+double PolyCell::stochasticEnzymaticOutput()
+{
+    auto first_gene = Gene_arr_.front();
+    first_gene.update_stochastic_conc_OU();
+    double fitness = first_gene.functional(true)
+        / (X_FACTOR + first_gene.functional(true));
+    return fitness;
 }
 
 double PolyCell::fitness()

@@ -44,9 +44,10 @@ public:
     double multiplicative();
     double neutral();
     double stochasticExpression();
-    double stochasticExpression2();
-    double fitness();           // Getter for fitness
-    void UpdateRates();		// This function updates fitness_.
+    double enzymaticOutput();
+    double stochasticEnzymaticOutput();
+    double fitness();           //!< Getter for fitness_
+    void UpdateRates();		//!< This function updates fitness_.
 
     void ranmut_Gene();
     void ranmut_Gene(std::ofstream&, int);

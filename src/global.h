@@ -67,6 +67,7 @@ const double COST = 1e-4; // see Geiler-Samerotte et al. 2011
 const double A_FACTOR = 0.025; // see Serohijos & Shakhnovich 2013
                                 // A_factor = sum_i{1/abundance_i}
 const double fNs = 0.775956284; //fraction of non-synonymous substitutions in a typical protein
+const double X_FACTOR = 0.2;
 
 
 // exponent values are precalculated to be used readily
