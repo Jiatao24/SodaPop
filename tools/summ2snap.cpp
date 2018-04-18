@@ -4,8 +4,10 @@
 DESCRIPTION: Converts population summary to a snap file.
 */
 
-int main(int argc, char *argv[]){
-    if(argc != 3){
+int main(int argc, char *argv[])
+{
+    if (argc != 3)
+    {
         std::cerr <<"sodasumm <population summary> [ 0-full | 1-single cell ]\n";
         exit(1);
     }
@@ -19,13 +21,13 @@ int main(int argc, char *argv[]){
 
     // open stream to read population summary
     std::fstream popf(argv[1]);
-    if(!popf.is_open()){
+    if (!popf.is_open())
+    {
         std::cerr << "File could not be opened";
         exit(1);
     }
 
     std::string line;
-    Cell_arr.reserve(POPSIZEMAX);
     while (!popf.eof())
     {
         getline(popf,line);
@@ -33,25 +35,28 @@ int main(int argc, char *argv[]){
         std::istringstream iss(line, std::istringstream::in);
         iss >> word;  
         if ( word == "C" ){
-            iss >> word;//cell count
+            iss >> word;  // cell count
             int count = atoi(word.c_str());   
-            iss >> word;//cell files
-            std::fstream temp (word.c_str());//convert std::string to char
-            if(!temp.is_open()){
+            iss >> word;  // cell files
+            std::fstream temp (word.c_str());
+            if (!temp.is_open())
+            {
                 std::cerr << "File could not be open: "<< word <<std::endl;
                 exit(1);
             }
             PolyCell A(temp);
-            if(flag)
+            if (flag)
             {
                 A.ch_barcode(getBarcode());
                 Cell_arr.push_back(A);
-                temp.close();
-                break;
             }
-            for(int i=0; i<count; i++){
-                Cell_arr.push_back(A);
-                Cell_arr.back().ch_barcode(getBarcode());
+            else
+            {
+                for (int i=0; i<count; i++)
+                {
+                    Cell_arr.push_back(A);
+                    Cell_arr.back().ch_barcode(getBarcode());
+                }
             }
             temp.close();
         }
@@ -61,7 +66,7 @@ int main(int argc, char *argv[]){
     //population snapshot
     int Total_Cell_Count = (int)(Cell_arr.size());
 
-    sprintf(buffer,"population.snap");
+    sprintf(buffer, "%s.snap", argv[1]);
 
     // Open stream to write snapshot
     std::fstream OUT(buffer, std::ios::out);
