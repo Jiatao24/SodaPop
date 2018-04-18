@@ -104,7 +104,6 @@ Gene::Gene(std::fstream& gene_in)
         {
             iss >> word;
             conc_ = atof(word.c_str());
-            stochastic_conc_ = conc_;
         }
         else if (word == "DG")
         { 
@@ -140,16 +139,8 @@ Gene::Gene(std::fstream& gene_in)
         else if (word == "//")
 	    ; // Do nothing
     }
-    // Here's a hack:
-    // If OU_variance is non-zero, then stochastic_concentration_
-    //   is drawn from a normal distribution. 
-    double OU_variance = OU_tau_ * OU_diffusion_ / 2.;
-    if (OU_variance != 0)
-    {
-        stochastic_conc_ = Gene::normal_(
-            g_rng,
-            std::normal_distribution<double>::param_type(conc_, OU_variance));
-    }
+
+    init_stochastic_conc();
     Na_ = 0; // default
     Ns_ = 0;
 }
@@ -386,6 +377,7 @@ std::string Gene::Mutate_Select(int i, int j)
     // get selection coefficient from matrix
     double new_s = matrix[g_num_][resi][aa_new-1];
 
+    // Gene number, FROM, residue number, TO
     std::string mutation = std::to_string(g_num_) + '\t' + GetProtFromNuc(cdn_curr) + '\t' + std::to_string(resi) + '\t' + GetProtFromNuc(cdn_new);
 
     // fetch primordial amino acid
@@ -481,6 +473,28 @@ double Gene::misfolded(bool stochastic)
 }
 
 
+double Gene::init_stochastic_conc()
+{
+    // If OU_variance is non-zero, then stochastic_concentration_
+    //   is drawn from a normal distribution. 
+    double OU_variance = OU_tau_ * OU_diffusion_ / 2.;
+    if (OU_variance != 0)
+    {
+        stochastic_conc_ = Gene::normal_(
+            g_rng,
+            std::normal_distribution<double>::param_type(
+                conc_, sqrt(OU_variance)));
+        if (stochastic_conc_ < 0)
+            stochastic_conc_ = 0;
+    }
+    else
+    {
+        stochastic_conc_ = conc_;
+    }
+    return stochastic_conc_;
+}
+
+
 // Draw a new value for stochastic concentration
 double Gene::update_stochastic_conc_gamma()
 {
@@ -495,11 +509,13 @@ double Gene::update_stochastic_conc_gamma()
 //
 double Gene::update_stochastic_conc_OU()
 {
+    // std::cout << "stochastic conc: " << stochastic_conc_;
     stochastic_conc_ = conc_
         + (stochastic_conc_ - conc_)*exp(-1/OU_tau_)
         + (sqrt((OU_diffusion_ * OU_tau_ / 2)*(1-exp(-2/OU_tau_)))
            * Gene::normal_(g_rng,
                            std::normal_distribution<double>::param_type(0, 1)));
+    // std::cout << "; new conc: " << stochastic_conc_ << std::endl;
     if (stochastic_conc_ < 0)
         stochastic_conc_ = 0;
     return stochastic_conc_;

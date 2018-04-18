@@ -112,13 +112,13 @@ Cell::Cell(std::fstream& IN, const std::string& genesPath)
         DNAsequence.assign(buf.begin(), buf.end());
      
         sprintf(buffer, "%s%d.gene", genesPath.c_str(), gene_nid);
-        std::fstream temp (buffer);
-        if (!temp.is_open())
+        std::fstream gene_data(buffer);
+        if (!gene_data.is_open())
         {
             std::cerr << "ERROR: Cannot open gene file " << buffer << std::endl;
             exit(2);
         }
-        Gene G(temp);   
+        Gene G(gene_data);   
         //update gene information
         dg = exp(-dg/kT);
         // Ideally we should have a Gene constructor instead of
@@ -134,13 +134,13 @@ Cell::Cell(std::fstream& IN, const std::string& genesPath)
 }
 
 
-// Initialize the cummulative gene length array.
+// Initialize the cumulative gene length array.
 void Cell::FillGene_L()
 {
     int sum = 0;
-    for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
+    for (auto it = Gene_arr_.begin(); it != Gene_arr_.end(); ++it)
     {
-        sum+= (*i).length();
+        sum += it->length();
         Gene_L_.push_back(sum);
     }
 }
@@ -170,4 +170,13 @@ int Cell::total_mutations(const int& spec)
     if(spec == 0) return sa;
     else if (spec == 1) return s;
     else return a;
+}
+
+
+void Cell::init_gene_stochastic_concentrations()
+{
+    for (auto& gene : Gene_arr_)
+    {
+        gene.init_stochastic_conc();
+    }
 }

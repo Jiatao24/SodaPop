@@ -31,6 +31,7 @@ public:
 
     void FillGene_L();
     int total_mutations(const int&);
+    void init_gene_stochastic_concentrations();
 
     virtual void UpdateRates() = 0;
     virtual void dump(std::fstream&, int) = 0;

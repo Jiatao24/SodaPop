@@ -92,9 +92,11 @@ public:
     double conc() const {return conc_;}
     double stochastic_conc() const {return stochastic_conc_;}
 
+    //! Pick a random value for stochastic concentration.
+    double init_stochastic_conc();
     //! Draw new protein concentration value from gamma distribution
     double update_stochastic_conc_gamma();
-    //! Draw new protein concentration value from Ornstein-Uhlenbeck process
+    //! Update protein concentration value via Ornstein-Uhlenbeck process
     double update_stochastic_conc_OU();
 
     double e() const {return e_;}

@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     int GENERATION_CTR = 1;
     int GENERATION_MAX = GENERATION_CTR + 1;
     int MUTATION_CTR = 0;
-    double N=1;
+    double populationSize=1;
     int DT = 1;
     double TIME = 0;
     char buffer[200];
@@ -43,6 +43,7 @@ int main(int argc, char *argv[])
     std::string geneListFile, genesPath;
     std::string outDir, startSnapFile, matrixFile;
 
+    // (Deprecated)
     // auto rng = ProperlySeededRandomEngine();
     // Ran rand_uniform(rng());                        
     // uniformdevptr = &rand_uniform;
@@ -112,13 +113,14 @@ int main(int argc, char *argv[])
     cmd.add(alphaArg);
     cmd.add(betaArg);
     cmd.add(inputArg);
+    cmd.add(seedArg);
 
     // Parse the argv array.
     cmd.parse(argc, argv);
 
     // Get values from args. 
     GENERATION_MAX = maxArg.getValue();
-    N = popArg.getValue();
+    populationSize = popArg.getValue();
     DT = dtArg.getValue();
 
     geneListFile = geneArg.getValue();
@@ -220,22 +222,25 @@ int main(int argc, char *argv[])
     double w_sum = 0;
 
     // IF POPULATION IS INITIALLY MONOCLONAL
-    // CREATE VECTOR WITH N IDENTICAL CELLS
+    // CREATE VECTOR WITH populationSize CELLS
     if (createPop)
     {
-        std::cout << "Creating a population of " << N << " cells ..."
+        std::cout << "Creating a population of " << populationSize << " cells ..."
                   << std::endl;
         PolyCell A(startsnap, genesPath);
-        Cell_arr = std::vector<PolyCell>(N, A);
+        Cell_arr = std::vector<PolyCell>(populationSize, A);
         for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
         {
              it->ch_barcode(getBarcode());
+             it->init_gene_stochastic_concentrations();
+             it->UpdateRates();
         } 
     }
     else
     {
         // ELSE IT MUST BE POPULATED CELL BY CELL FROM SNAP FILE
-        Cell_arr.reserve(N);
+        // Note number of cells is Total_Cell_Count
+        Cell_arr.reserve(populationSize);
         int count = 0;
         std::cout << "Constructing population from source "
                   << startSnapFile.c_str() << " ..." << std::endl;
@@ -305,10 +310,11 @@ int main(int argc, char *argv[])
     // PSEUDO WRIGHT-FISHER PROCESS
     while (GENERATION_CTR < GENERATION_MAX)
     {
+        // std::cout << "\nGeneration " << GENERATION_CTR << std::endl;
         std::vector<PolyCell> Cell_temp;
         // reserve 2N to allow overflow and prevent segfault
-        // (unnecessary, stl containers shouldn't have this problem - VZ)
-        Cell_temp.reserve(N*2);
+        // VZ: I think it's more so iterators remain valid.
+        Cell_temp.reserve(populationSize*2);
         // for each cell in the population
 
         for (auto cell_it = Cell_arr.begin(); cell_it != Cell_arr.end();
@@ -317,11 +323,14 @@ int main(int argc, char *argv[])
             // fitness of cell j with respect to sum of population fitness
             double relative_fitness = cell_it->fitness() / w_sum;
             // probability parameter of binomial distribution
-            std::binomial_distribution<> binCell(N, relative_fitness);
+            std::binomial_distribution<> binCell(populationSize, relative_fitness);
             // number of progeny k is drawn from binomial distribution
-            // with N trials and mean w=relative_fitness
+            // with populationSize trials and mean w=relative_fitness
             int n_progeny = binCell(g_rng);
-            
+            // std::cout << "cell " << std::distance(Cell_arr.begin(), cell_it)
+            //           << "; fitness: " << cell_it->fitness()
+            //           << "; n_progeny: " << n_progeny << std::endl;
+
             // if nil, the cell will be wiped from the population
             if (n_progeny == 0)
                 continue;
@@ -339,8 +348,11 @@ int main(int argc, char *argv[])
             while (it < last)
             {
                 // potentially mutate
+                // std::cout << "  new cell " << std::distance(Cell_temp.begin(), it);
+                // std::cout << "; fitness: " << it->fitness();
                 if (it->mrate() * it->genome_size() > randomNumber())
                 {
+                    // std::cout << "; MUTATION! ";
                     MUTATION_CTR++;
                     if (trackMutations)
                     {
@@ -354,35 +366,39 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
+                    // std::cout << "; NO MUTATION! ";
                     // Even if we don't mutate, update the fitness.
                     // In stochastic gene expression, fitness will change.
                     it->UpdateRates();
                 }
+                // std::cout << "new fitness: " << it->fitness() << std::endl;
                 std::advance(it, 1); // why not just it++?
             }
         }
 
-        // if the population is below N
+        // if the population is below populationSize
         // randomly draw from progeny to pad
-        while (Cell_temp.size() < N)
+        while (Cell_temp.size() < populationSize)
         {
+            // std::cout << "padding " << Cell_temp.size() << " < " << populationSize << std::endl;
             auto cell_it = Cell_temp.begin();
-            Cell_temp.emplace_back(
+            Cell_temp.push_back(
                 (*(cell_it + randomNumber()*Cell_temp.size())));
             // Need to update fitness if stochasticExpression
             Cell_temp.back().UpdateRates();
         }
 
-        // if the population exceeds N
-        // cells are randomly shuffled and the vector is shrunk to N
-        if (Cell_temp.size() > N)
+        // if the population exceeds populationSize
+        // cells are randomly shuffled and the vector is shrunk to populationSize
+        if (Cell_temp.size() > populationSize)
         {
+            // std::cout << "resizing " << Cell_temp.size() << " > " << populationSize << std::endl;
             std::shuffle(Cell_temp.begin(), Cell_temp.end(), g_rng);
-            Cell_temp.resize(N);
+            Cell_temp.resize(populationSize);
         }
 
         Total_Cell_Count = (int)(Cell_temp.size());
-        assert (Total_Cell_Count == N);
+        assert (Total_Cell_Count == populationSize);
         // swap population with initial vector
         Cell_arr.swap(Cell_temp);
 
@@ -413,24 +429,24 @@ int main(int argc, char *argv[])
       
              double frame_time = GENERATION_CTR;
              OUT2.write((char*)(&frame_time), sizeof(double));
-             OUT2.write((char*)(&TIME), sizeof(double));
+             OUT2.write((char*)(&TIME), sizeof(double)); // this is always 0?
              OUT2.write((char*)(&Total_Cell_Count), sizeof(int));
 
              if (useShort)
              {
-                    for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
-                    {
+                 for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
+                 {
                      it->dumpShort(OUT2);
-                    } 
+                 } 
              }
              else
              {
-                int l=1;
-                for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
-                {
-                    it->dump(OUT2,l);
-                    l++;
-                }
+                 int l=1;
+                 for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
+                 {
+                     it->dump(OUT2, l);
+                     l++;
+                 }
              }
               
              OUT2.close();
@@ -445,7 +461,7 @@ int main(int argc, char *argv[])
     if (enableAnalysis)
     {
         std::string script = "/path/to/barcodes.sh";
-        std::string command = script+" "+outDir+" "+std::to_string(GENERATION_MAX)+" "+std::to_string(N)+" "+std::to_string(DT)+" "+std::to_string((int) useShort);
+        std::string command = script+" "+outDir+" "+std::to_string(GENERATION_MAX)+" "+std::to_string(populationSize)+" "+std::to_string(DT)+" "+std::to_string((int) useShort);
         std::cout << "Call analysis using the following command:" << std::endl;
         std::cout << command << std::endl;
         // const char *cmd = command.c_str();

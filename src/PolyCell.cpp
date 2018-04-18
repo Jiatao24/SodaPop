@@ -20,9 +20,9 @@ PolyCell::PolyCell(std::fstream& f) : Cell(f)
 {
     selectFitness();
     // Update current rates
-    this->UpdateRates();  
+    UpdateRates();  
     // Fill gene length array
-    this->FillGene_L();
+    FillGene_L();
 }    
 
 // Construct from cell file in binary and gene path.
@@ -30,20 +30,9 @@ PolyCell::PolyCell(std::fstream& f, const std::string& s) : Cell(f, s)
 {
     selectFitness();
     // Update current rates
-    this->UpdateRates();  
+    UpdateRates();  
     // Fill gene length array
-    this->FillGene_L();
-}
-
-// Initialize the cumulative gene length array
-void PolyCell::FillGene_L()
-{
-    int sum = 0;
-    for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
-    {
-        sum+= i->length();
-        Gene_L_.push_back(sum);
-    }
+    FillGene_L();
 }
 
 void PolyCell::selectFitness()
@@ -168,7 +157,7 @@ double PolyCell::enzymaticOutput()
 // STOCHASTIC ENZYMATIC OUTPUT (Presumes that there is only a single gene)
 double PolyCell::stochasticEnzymaticOutput()
 {
-    auto first_gene = Gene_arr_.front();
+    auto& first_gene = Gene_arr_.front();
     first_gene.update_stochastic_conc_OU();
     double fitness = first_gene.functional(true)
         / (X_FACTOR + first_gene.functional(true));
@@ -182,6 +171,7 @@ double PolyCell::fitness()
 
 void PolyCell::UpdateRates()
 {
+    auto gene = Gene_arr_.front();
     fitness_ = (this->*fit)();
 }
 
@@ -198,14 +188,14 @@ void PolyCell::ranmut_Gene(std::ofstream& log,int ctr)
     auto k = Gene_L_.begin();
 
     if(site >= (*k)){
-    // random number generated is greater than
-    // the cummulative sum of genes
-         for(k = Gene_L_.begin(); k != Gene_L_.end(); ++k){
-             if( site<(*k) ) break;
-             j++; 
-         }        
-         k--;
-         site = site - (*k);        
+        // random number generated is greater than
+        // the cummulative sum of genes
+        for(k = Gene_L_.begin(); k != Gene_L_.end(); ++k){
+            if( site<(*k) ) break;
+            j++; 
+        }        
+        k--;
+        site = site - (*k);        
     }
 
     std::string mutation = "";
@@ -242,12 +232,12 @@ void PolyCell::ranmut_Gene(std::ofstream& log,int ctr)
 
     // save beneficial mutations to log
     // we could save all mutations with abs(s) >= some value x
+
+    // Barcode, Gene number, FROM, residue number, TO, Fitness difference, Generation count
     log << barcode().c_str() << "\t";
-    log << std::fixed;		// this std::fixed; output fixed amount of zeros
+    log << std::fixed;
     log << mutation << "\t";
-    // if it's a nonsyn mutation, mutation is a tab-separated string
-    // gene_number, current residue, residue number, new residue
-    log << s << "\t";		// fitness difference f - i
+    log << s << "\t";		// fitness difference wf - wi
     log << ctr << std::endl;		// generation count
 }
 
@@ -264,16 +254,16 @@ void PolyCell::ranmut_Gene()
 
     if (site >= (*k))
     {
-    // random number generated is greater than
-    // the cummulative sum of genes
-         for (k = Gene_L_.begin(); k != Gene_L_.end(); ++k)
-         {
-             if (site < *k)
-                 break;
-             j++; 
-         }        
-         k--;
-         site = site - (*k);        
+        // random number generated is greater than
+        // the cummulative sum of genes
+        for (k = Gene_L_.begin(); k != Gene_L_.end(); ++k)
+        {
+            if (site < *k)
+                break;
+            j++; 
+        }        
+        k--;
+        site = site - (*k);        
     }
 
     int bp = (int) (3 * randomNumber());
@@ -334,28 +324,30 @@ void PolyCell::dump(std::fstream& OUT, int cell_index)
     x = (int)(Gene_arr_.size());		 	 
     OUT.write((char*)(&x),sizeof(int));
 
-   for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i){
-        int gene_nid = i->num();
-        double s = i->e();
-        double c = i->conc();
-	int stoc_conc = i->stochastic_conc();
-        double dg = -kT*log(i->dg());
-        double f = i->f();
+    for (auto gene_it = Gene_arr_.begin(); gene_it != Gene_arr_.end();
+         ++gene_it)
+    {
+        int gene_nid = gene_it->num();
+        double s = gene_it->e();
+        double c = gene_it->conc();
+	double stoc_conc = gene_it->stochastic_conc();
+        double dg = -kT*log(gene_it->dg());
+        double f = gene_it->f();
 
-        int Ns = i->Ns();
-        int Na = i->Na();
+        int Ns = gene_it->Ns();
+        int Na = gene_it->Na();
 
         OUT.write((char*)(&gene_nid),sizeof(int));
         OUT.write((char*)(&s),sizeof(double));
         OUT.write((char*)(&c),sizeof(double));
-        OUT.write((char*)(&stoc_conc),sizeof(int));
+        OUT.write((char*)(&stoc_conc),sizeof(double));
         OUT.write((char*)(&dg),sizeof(double));
         OUT.write((char*)(&f),sizeof(double));
         OUT.write((char*)(&Na),sizeof(int));
         OUT.write((char*)(&Ns),sizeof(int));
 
         //Save length of nucleo sequence
-        std::string DNAsequence = i->nseq();
+        std::string DNAsequence = gene_it->nseq();
         int nl = DNAsequence.length();
         OUT.write((char*)&nl, sizeof(int));
         OUT.write(DNAsequence.data(), nl);
@@ -386,33 +378,35 @@ void PolyCell::dumpShort(std::fstream& OUT)
 // Print cell information to stdout
 void PolyCell::PrintCell(int cell_ndx)
 {
-      char buffer[140];
-      sprintf(buffer,"C %6d %6d %12e %12e %d", cell_ndx, ID_, o_mrate_, mrate(), (int)Gene_arr_.size());  
-      std::cout << buffer << std::endl;
-      for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
-      {
+    char buffer[140];
+    sprintf(buffer,"C %6d %6d %12e %12e %d", cell_ndx, ID_, o_mrate_, mrate(), (int)Gene_arr_.size());  
+    std::cout << buffer << std::endl;
+    for (auto gene_it = Gene_arr_.begin(); gene_it != Gene_arr_.end();
+         ++gene_it)
+    {
         //cout << "X ";
-        int gene_nid = i->num();
-        double e = i->e();
-        double c = i->conc();
-        double dg = -kT * log(i->dg());
-        int Ns = i->Ns();
-        int Na = i->Na();
+        int gene_nid = gene_it->num();
+        double e = gene_it->e();
+        double c = gene_it->conc();
+        double dg = -kT * log(gene_it->dg());
+        int Ns = gene_it->Ns();
+        int Na = gene_it->Na();
            
         sprintf(buffer,"G %d% 2.2f %10.8f %10.8f %d %d ", gene_nid, e, c, dg, Ns, Na);
         std::cout << buffer << std::endl;  
-      }
-      std::cout << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 void PolyCell::UpdateNsNa()
 {
     int new_Na = 0;
     int new_Ns = 0;
-    for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
+    for (auto gene_it = Gene_arr_.begin(); gene_it != Gene_arr_.end();
+         ++gene_it)
     {
-        new_Na += i->Na();
-        new_Ns += i->Ns();
+        new_Na += gene_it->Na();
+        new_Ns += gene_it->Ns();
     }
     Total_Na_ = new_Na;
     Total_Ns_ = new_Ns;

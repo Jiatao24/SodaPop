@@ -3,7 +3,7 @@ CP =cp
 CC =g++
 
 IDIR =./include
-CXXFLAGS =-std=c++11 -Wall -O2 -I$(IDIR)
+CXXFLAGS =-std=c++11 -Wall -O3 -I$(IDIR)
 # CXXFLAGS =-std=c++11 -Wall -g -I$(IDIR)
 LINK = $(CXX) $(CXXFLAGS)
 COMPILE = $(CXX) $(LIBS) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS) -c

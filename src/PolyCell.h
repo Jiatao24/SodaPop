@@ -32,9 +32,7 @@ public:
 
     PolyCell();
     PolyCell(std::fstream&);			    
-    PolyCell(std::fstream&, const std::string&);
-
-    void FillGene_L();
+    PolyCell(std::fstream& binaryInfile, const std::string& genePath);
 
     // Fitness functions
     void selectFitness();
