@@ -509,9 +509,10 @@ void qread_Cell(std::fstream& IN, std::fstream& OUT)
 // Reads a unit cell stored in binary format using Cell::dump()
 // This function writes part of what's read to OUT
 // Output is like this:
-// barcode "C" cell_index fitness mrate
-// for each gene, output
-// gene_index "G" concentration stoc_concentration deltaG gene_fitness n_nonsynonymous n_synonymous
+// for each cell:
+//   barcode "C" cell_index fitness mrate
+//   for each gene:
+//     gene_index "G" concentration stoc_concentration deltaG gene_fitness n_nonsynonymous n_synonymous
 // protein_sequence
 void read_Cell(std::fstream& IN, std::fstream& OUT)
 {
@@ -538,15 +539,16 @@ void read_Cell(std::fstream& IN, std::fstream& OUT)
     sprintf(buffer,"\tC\t%d\t%e\t%e", cell_index, f, m);
     OUT << buffer << std::endl;
 
-    for(int j=0; j<gene_size; j++){
-        double e, c, dg, f;
-        int gene_nid, Ns, Na, stoc_conc;
+    for (int j=0; j<gene_size; j++)
+    {
+        double e, c, stoc_conc, dg, f;
+        int gene_nid, Ns, Na;
         std::string DNAsequence;
 
         IN.read((char*)(&gene_nid),sizeof(int));   
         IN.read((char*)(&e),sizeof(double));
         IN.read((char*)(&c),sizeof(double));
-        IN.read((char*)(&stoc_conc),sizeof(int));
+        IN.read((char*)(&stoc_conc),sizeof(double));
         IN.read((char*)(&dg),sizeof(double));
         IN.read((char*)(&f),sizeof(double));
 
@@ -560,7 +562,7 @@ void read_Cell(std::fstream& IN, std::fstream& OUT)
         IN.read(&buff[0], nl);  
         DNAsequence.assign(buff.begin(), buff.end());
 
-        sprintf(buffer,"%d\tG\t%e\t%d\t%e\t%e\t%d\t%d\t",j, c, stoc_conc, dg, f, Na, Ns);
+        sprintf(buffer,"%d\tG\t%e\t%.5f\t%e\t%e\t%d\t%d\t",j, c, stoc_conc, dg, f, Na, Ns);
         OUT << buffer << std::endl;
         OUT << GetProtFromNuc(DNAsequence) << std::endl;
     } 
