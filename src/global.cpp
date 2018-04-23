@@ -1,9 +1,10 @@
 #include "global.h"
 
 
-// Two globally used variables.
+// Global variables (mutable).
 VectStr PrimordialAASeq;
 double matrix[max_gene][max_resi][20];
+double X_FACTOR = 150;
 
 
 /******* MAPPING FUNCTIONS *******/

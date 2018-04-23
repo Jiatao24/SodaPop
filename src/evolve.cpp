@@ -100,7 +100,12 @@ int main(int argc, char *argv[])
     // RNG seed
     TCLAP::ValueArg<unsigned long> seedArg("", "seed", "Seed value for RNG.", false, 0, "unsigned int (64-bit)");
 
+    // X_FACTOR
+    TCLAP::ValueArg<double> xfactorArg("x", "x-factor", "Enzymatic output factor.", false, 0, "positive double");
+
     // Add the arguments to the CmdLine object.
+    cmd.add(seedArg);
+    cmd.add(xfactorArg);
     cmd.add(maxArg);
     cmd.add(popArg);
     cmd.add(dtArg);
@@ -113,7 +118,6 @@ int main(int argc, char *argv[])
     cmd.add(alphaArg);
     cmd.add(betaArg);
     cmd.add(inputArg);
-    cmd.add(seedArg);
 
     // Parse the argv array.
     cmd.parse(argc, argv);
@@ -190,6 +194,17 @@ int main(int argc, char *argv[])
     trackMutations = eventsArg.getValue();
     useShort = shortArg.getValue();
     createPop = initArg.getValue();
+
+    if (xfactorArg.isSet())
+    {
+        X_FACTOR = xfactorArg.getValue();
+        if (X_FACTOR <= 0)
+        {
+            std::cerr << "error: --x-factor argument not positive ("
+                      << X_FACTOR << ")\n";
+            exit(1);
+        }
+    }
 
     }
     catch (TCLAP::ArgException &e)
