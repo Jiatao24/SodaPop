@@ -27,12 +27,12 @@ Copyright (C) 2017 Louis Gauthier
 int main(int argc, char *argv[])
 {
     // these variables will hold the parameters input (or not) by the user
-    int GENERATION_CTR = 1;
-    int GENERATION_MAX = GENERATION_CTR + 1;
-    int MUTATION_CTR = 0;
+    int generationNumber = 1;
+    int generationMax = generationNumber + 1;
+    int mutationCount = 0;
     double populationSize=1;
     int DT = 1;
-    double TIME = 0;
+    double TIME = 0;            // This is never updated?
     char buffer[200];
     bool enableAnalysis = false;
     bool trackMutations = false;
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     cmd.parse(argc, argv);
 
     // Get values from args. 
-    GENERATION_MAX = maxArg.getValue();
+    generationMax = maxArg.getValue();
     populationSize = popArg.getValue();
     DT = dtArg.getValue();
 
@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
     std::cout << "Saving initial population snapshot ... " << std::endl;
     // save initial population snapshot
     sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
-            outDir.c_str(), GENERATION_CTR); 
+            outDir.c_str(), generationNumber); 
 
     // Open snapshot file
     std::fstream OUT2(buffer, std::ios::out | std::ios::binary);
@@ -323,9 +323,9 @@ int main(int argc, char *argv[])
     std::cout << "Starting evolution ..." << std::endl;
 
     // PSEUDO WRIGHT-FISHER PROCESS
-    while (GENERATION_CTR < GENERATION_MAX)
+    while (generationNumber < generationMax)
     {
-        // std::cout << "\nGeneration " << GENERATION_CTR << std::endl;
+        // std::cout << "\nGeneration " << generationNumber << std::endl;
         std::vector<PolyCell> Cell_temp;
         // reserve 2N to allow overflow and prevent segfault
         // VZ: I think it's more so iterators remain valid.
@@ -368,11 +368,11 @@ int main(int argc, char *argv[])
                 if (it->mrate() * it->genome_size() > randomNumber())
                 {
                     // std::cout << "; MUTATION! ";
-                    MUTATION_CTR++;
+                    mutationCount++;
                     if (trackMutations)
                     {
                         // mutate and write mutation to file
-                        it->ranmut_Gene(MUTATIONLOG, GENERATION_CTR);
+                        it->ranmut_Gene(MUTATIONLOG, generationNumber);
                     }
                     else
                     {
@@ -427,12 +427,12 @@ int main(int argc, char *argv[])
         }
         
         // update generation counter
-        GENERATION_CTR++; 
+        generationNumber++; 
         // save population snapshot every DT generations
-        if ((GENERATION_CTR % DT) == 0)
+        if ((generationNumber % DT) == 0)
         {
              sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
-                     outDir.c_str(), GENERATION_CTR); 
+                     outDir.c_str(), generationNumber); 
 
              // Open snapshot file
              std::fstream OUT2(buffer, std::ios::out | std::ios::binary);
@@ -442,7 +442,7 @@ int main(int argc, char *argv[])
                  exit(1);
              }
       
-             double frame_time = GENERATION_CTR;
+             double frame_time = generationNumber;
              OUT2.write((char*)(&frame_time), sizeof(double));
              OUT2.write((char*)(&TIME), sizeof(double)); // this is always 0?
              OUT2.write((char*)(&Total_Cell_Count), sizeof(int));
@@ -470,13 +470,13 @@ int main(int argc, char *argv[])
 
     MUTATIONLOG.close();
     std::cout << "Done." << std::endl;
-    std::cout << "Total number of mutation events: " << MUTATION_CTR << std::endl;
+    std::cout << "Total number of mutation events: " << mutationCount << std::endl;
 
     // if the user toggled analysis, call shell script
     if (enableAnalysis)
     {
         std::string script = "/path/to/barcodes.sh";
-        std::string command = script+" "+outDir+" "+std::to_string(GENERATION_MAX)+" "+std::to_string(populationSize)+" "+std::to_string(DT)+" "+std::to_string((int) useShort);
+        std::string command = script+" "+outDir+" "+std::to_string(generationMax)+" "+std::to_string(populationSize)+" "+std::to_string(DT)+" "+std::to_string((int) useShort);
         std::cout << "Call analysis using the following command:" << std::endl;
         std::cout << command << std::endl;
         // const char *cmd = command.c_str();

@@ -63,14 +63,26 @@ j=1
 cat $PREFIX/barcodes/start.txt > $PREFIX/barcodes/series$i.txt
 
 #### JOIN TIME FRAMES IN A SUITABLE FORMAT
-for filename in `find $PREFIX/barcodes/ -maxdepth 1 -name "*.unique"`
+for filename in `find $PREFIX/barcodes/ -maxdepth 1 -name "*.unique" | sort`
 do
-	join -t' ' -e 0 -a 1 -1 1 -2 1 -o 2.2 $PREFIX/barcodes/series$i.txt $filename | paste -d' ' $PREFIX/barcodes/series$i.txt - > $PREFIX/barcodes/series$j.txt
-	rm $PREFIX/barcodes/series$i.txt
-	((i++))
-	((j++))
+    # join:
+    # -t' ' : ' ' is input/output separator
+    # -e 0  : '0' replaces missing input fields
+    # -a 1  : print unpairable lines from first file
+    # -1 1  : join on field 1 of file 1 (this is default)
+    # -2 1  : join on field 1 of file 2 (this is default)
+    # -o 2.2 : output line format (file 2 field 2)
+
+    # paste: merge lines of files
+    # -d' ' : ' ' delimiter
+    # Contents of previous series goes + new column of populations
+    join -t' ' -e 0 -a 1 -1 1 -2 1 -o 2.2 $PREFIX/barcodes/series$i.txt $filename | paste -d' ' $PREFIX/barcodes/series$i.txt - > $PREFIX/barcodes/series$j.txt
+    rm $PREFIX/barcodes/series$i.txt
+    ((i++))
+    ((j++))
 done
 
+# cut takes fields 1 and 3 to the end of the line
 cat $PREFIX/barcodes/series$i.txt | cut -d " " -f 1,3- > $PREFIX/ALL_generations.txt
 
 rm $PREFIX/barcodes/series*.txt
