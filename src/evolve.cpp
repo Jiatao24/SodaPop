@@ -27,7 +27,7 @@ Copyright (C) 2017 Louis Gauthier
 int main(int argc, char *argv[])
 {
     // these variables will hold the parameters input (or not) by the user
-    int generationNumber = 1;
+    int generationNumber = 0;
     int generationMax = generationNumber + 1;
     int mutationCount = 0;
     double populationSize=1;

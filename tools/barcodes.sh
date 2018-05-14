@@ -53,7 +53,7 @@ do
 	fi < $PREFIX/barcodes/${y##*/}.unique
 done
 
-cat $PREFIX/barcodes/$OUT.gen0000000001.snap.unique > $PREFIX/barcodes/start.txt
+cat $PREFIX/barcodes/$OUT.gen0000000000.snap.unique > $PREFIX/barcodes/start.txt
 
 echo Combining time series...
 
@@ -63,7 +63,8 @@ j=1
 cat $PREFIX/barcodes/start.txt > $PREFIX/barcodes/series$i.txt
 
 #### JOIN TIME FRAMES IN A SUITABLE FORMAT
-for filename in `find $PREFIX/barcodes/ -maxdepth 1 -name "*.unique" | sort`
+# The format is for each line: BARCODE Gen(DTx0)_population Gen(DTx1)_population ...
+for filename in `find $PREFIX/barcodes/ -maxdepth 1 -name '*.unique' | sort`
 do
     # join:
     # -t' ' : ' ' is input/output separator
@@ -83,6 +84,7 @@ do
 done
 
 # cut takes fields 1 and 3 to the end of the line
+# Basically, snapshot from generation 0 is ignored.
 cat $PREFIX/barcodes/series$i.txt | cut -d " " -f 1,3- > $PREFIX/ALL_generations.txt
 
 rm $PREFIX/barcodes/series*.txt

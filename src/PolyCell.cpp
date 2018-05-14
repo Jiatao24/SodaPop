@@ -176,7 +176,7 @@ void PolyCell::UpdateRates()
 }
 
 // ctr is the generation
-void PolyCell::ranmut_Gene(std::ofstream& log,int ctr)
+void PolyCell::ranmut_Gene(std::ofstream& log, int ctr)
 {
     // get genome size
     int L = Gene_L_.back();
