@@ -4,7 +4,7 @@
 // Global variables (mutable).
 VectStr PrimordialAASeq;
 double matrix[max_gene][max_resi][20];
-double X_FACTOR = 150;
+double X_FACTOR = 10;           // FOR DHFR
 
 
 /******* MAPPING FUNCTIONS *******/
