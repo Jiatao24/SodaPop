@@ -2,6 +2,8 @@
 
 #include <tclap/CmdLine.h>
 
+#include <gsl/gsl_randist.h>
+
 #include "rng.h"
 #include "global.h"
 #include "PolyCell.h"
