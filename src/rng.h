@@ -30,18 +30,6 @@ static double gsl_pcg_get_double(void *state)
     return (*((gsl_pcg_state *)state)->rng)() / 4294967296.;
 }
 
-
-// typedef struct
-//   {
-//     const char *name;
-//     unsigned long int max;
-//     unsigned long int min;
-//     size_t size;
-//     void (*set) (void *state, unsigned long int seed);
-//     unsigned long int (*get) (void *state);
-//     double (*get_double) (void *state);
-//   }
-// gsl_rng_type;
 static const gsl_rng_type gsl_rng_pcg = {
     "pcg",
     0xffffffffUL,
@@ -51,6 +39,8 @@ static const gsl_rng_type gsl_rng_pcg = {
     &gsl_pcg_get,
     &gsl_pcg_get_double
 };
+// End GSL setup
+
 
 // Seed RNG using user-provided value.
 //   pcg32::state_type is uint64_t.

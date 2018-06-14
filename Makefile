@@ -1,12 +1,13 @@
-RM =rm
-CP =cp
-CC =g++
+RM = rm
+CP = cp
+CC = g++
 
 IDIR =./include
 CXXFLAGS =-std=c++11 -Wall -O3 -I$(IDIR)
 # CXXFLAGS =-std=c++11 -Wall -g -I$(IDIR)
-LINK = $(CXX) $(CXXFLAGS)
-COMPILE = $(CXX) $(LIBS) $(CXXFLAGS) $(LDFLAGS) $(LDLIBS) -c
+LINK = $(CXX) $(CXXFLAGS) $(LDLIBS)
+LDLIBS = -lgsl
+COMPILE = $(CXX) $(LIBS) $(CXXFLAGS) $(LDFLAGS) -c
 
 SODAPOP = sodapop
 SNAP2ASCII = sodasnap
@@ -45,7 +46,7 @@ Gene.o: ./src/Gene.cpp
 global.o: ./src/global.cpp
 	$(COMPILE) ./src/global.cpp
 
-sodapop.o: ./src/evolve.cpp ./src/Gene.h ./src/Cell.h ./src/global.h
+sodapop.o: ./src/evolve.cpp ./src/Gene.h ./src/Cell.h ./src/global.h ./src/rng.h
 	$(COMPILE) -o sodapop.o ./src/evolve.cpp
 snap2ascii.o: ./tools/snap2ascii.cpp ./src/global.h
 	$(COMPILE) -o snap2ascii.o ./tools/snap2ascii.cpp
