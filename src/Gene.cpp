@@ -432,6 +432,8 @@ void Gene::Update_Sequences(const std::string DNAsequence)
     if(l != ln_)
     {
         std::cerr << "ERROR: Replacing DNA sequence with a non-equal length DNA. "<< std::endl;
+        // std::cerr << "Old: " << nucseq_ << std::endl;
+        // std::cerr << "New: " << DNAsequence << std::endl;
         exit(2);
     }       
 
@@ -518,5 +520,4 @@ double Gene::update_stochastic_conc_OU()
     // std::cout << "; new conc: " << stochastic_conc_ << std::endl;
     if (stochastic_conc_ < 0)
         stochastic_conc_ = 0;
-    return stochastic_conc_;
-}
+    return stochastic_con

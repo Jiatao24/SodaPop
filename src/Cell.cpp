@@ -73,7 +73,8 @@ Cell::Cell(std::fstream& IN, const std::string& genesPath)
     double m,m0;
    
     IN.read((char*)(&cell_index),sizeof(int));  
-    IN.read((char*)(&cell_id),sizeof(int)); ID_ = cell_id;
+    IN.read((char*)(&cell_id),sizeof(int));
+    ID_ = cell_id;
 
     //read barcode
     int l;
@@ -83,21 +84,23 @@ Cell::Cell(std::fstream& IN, const std::string& genesPath)
     IN.read(&buf[0], l);
     ch_barcode(std::string().assign(buf.begin(), buf.end()));
 
-    IN.read((char*)(&m0),sizeof(double)); o_mrate_ = m0;
-    IN.read((char*)(&m),sizeof(double));  c_mrate_ = m;
+    IN.read((char*)(&m0),sizeof(double));
+    o_mrate_ = m0;
+    IN.read((char*)(&m),sizeof(double));
+    c_mrate_ = m;
     IN.read((char*)(&gene_size),sizeof(int));
     
     //read gene info
     for (int j = 0; j < gene_size; j++)
     {
-        double e, c, dg, f;
-        int gene_nid, Ns, Na, stochastic_concentration;
+        double e, c, dg, f, stochastic_concentration;
+        int gene_nid, Ns, Na;
         std::string DNAsequence;
      
         IN.read((char*)(&gene_nid),sizeof(int));   
         IN.read((char*)(&e),sizeof(double));
         IN.read((char*)(&c),sizeof(double));
-        IN.read((char*)(&stochastic_concentration),sizeof(int));
+        IN.read((char*)(&stochastic_concentration),sizeof(double));
         IN.read((char*)(&dg),sizeof(double));
         IN.read((char*)(&f),sizeof(double));
         IN.read((char*)(&Ns),sizeof(int));
