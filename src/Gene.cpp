@@ -520,4 +520,5 @@ double Gene::update_stochastic_conc_OU()
     // std::cout << "; new conc: " << stochastic_conc_ << std::endl;
     if (stochastic_conc_ < 0)
         stochastic_conc_ = 0;
-    return stochastic_con
+    return stochastic_conc_;
+}
