@@ -98,11 +98,19 @@ int main(int argc, char *argv[])
         // RNG seed
         TCLAP::ValueArg<unsigned long> seedArg("", "seed", "Seed value for RNG.", false, 0, "unsigned int (64-bit)");
 
+        // RNG stream
+        TCLAP::ValueArg<unsigned long> streamArg(
+            "", "stream", "Stream value for RNG (set different streams for different runs to assure different "
+            "random numbers for each run. But no two runs with the same stream will be identical unless the same seed "
+            "is used as well.)",
+            false, 0, "unsigned int (64-bit)");
+
         // X_FACTOR
         TCLAP::ValueArg<double> xfactorArg("x", "x-factor", "Enzymatic output factor.", false, 0, "positive double");
 
         // Add the arguments to the CmdLine object.
         cmd.add(seedArg);
+        cmd.add(streamArg);
         cmd.add(xfactorArg);
         cmd.add(maxArg);
         cmd.add(popArg);
@@ -134,6 +142,9 @@ int main(int argc, char *argv[])
 
         if (seedArg.isSet())
             setRngSeed(seedArg.getValue());
+
+        if (streamArg.isSet())
+            setRngStream(streamArg.getValue());
 
         std::cout << "Begin ... " << std::endl;
         if (inputType == "s")

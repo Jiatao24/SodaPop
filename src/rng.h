@@ -46,6 +46,11 @@ static const gsl_rng_type gsl_rng_pcg = {
 //   pcg32::state_type is uint64_t.
 void setRngSeed(pcg32::state_type seed);
 
+// Set RNG stream using user-provided value. Function has no effect if
+//   setRngSeed is used after this function. pcg32::state_type is
+//   uint64_t.
+void setRngStream(pcg32::state_type stream);
+
 // Return random number in range [0, 1)
 double randomNumber();
 

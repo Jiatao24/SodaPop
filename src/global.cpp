@@ -563,7 +563,7 @@ void read_Cell(std::fstream& IN, std::fstream& OUT)
         IN.read(&buff[0], nl);  
         DNAsequence.assign(buff.begin(), buff.end());
 
-        sprintf(buffer,"%d\tG\t%e\t%.5f\t%e\t%e\t%d\t%d\t",j, c, stoc_conc, dg, f, Na, Ns);
+        sprintf(buffer,"%d\tG\t%.5f\t%.5f\t%e\t%e\t%d\t%d\t",j, c, stoc_conc, dg, f, Na, Ns);
         OUT << buffer << std::endl;
         OUT << GetProtFromNuc(DNAsequence) << std::endl;
     } 
