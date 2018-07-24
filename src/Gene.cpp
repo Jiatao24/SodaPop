@@ -1,7 +1,11 @@
 #include <cmath>
+#include "nlohmann/json.hpp"
 
 #include "Gene.h"
 #include "global.h"
+
+// for convenience
+using json = nlohmann::json;
 
 std::gamma_distribution<> Gene::gamma_ = std::gamma_distribution<>(1.0, 1.0);
 std::normal_distribution<> Gene::normal_ = std::normal_distribution<>(1.0, 1.0);
@@ -136,6 +140,11 @@ Gene::Gene(std::fstream& gene_in)
             iss >> word;
             OU_diffusion_ = atof(word.c_str());
         }
+        else if (word == "BIOPHYSICS")
+        {
+            iss >> word;
+            loadBiophysicalParameters(word);
+        }
         else if (word == "//")
 	    ; // Do nothing
     }
@@ -199,6 +208,81 @@ Gene& Gene::operator=(const Gene& A)
     }
     return *this;
 }
+
+
+// Mutate, updating biophysical parameters
+// TODO: write this function
+std::string Gene::mutate(int site, int bp)
+{
+    // extract codon to be mutated
+    int cdn_ndx = (site % 3);
+    int cdn_start = site - cdn_ndx; 
+    int resi = cdn_start / 3;
+
+    // fetch current codon
+    std::string cdn_curr = nucseq_.substr(cdn_start, 3);
+    // fetch current amino acid
+    int aa_curr = GetIndexFromCodon(cdn_curr);
+    std::string cdn_new = cdn_curr;
+
+    std::string s = PrimordialAASeq.at(g_num_);     
+    int aa_primo = GetIndexFromAA(s.at(resi));
+
+    // get mutated bp
+    std::string new_bp = AdjacentBP( cdn_curr.substr(cdn_ndx, 1), bp); //new BP
+   
+    // mutate codon
+    cdn_new.replace(cdn_ndx, 1, new_bp);
+    // check for stop codon
+    cdn_new = n3_to_n3(cdn_new, cdn_curr, cdn_ndx);
+    // get new amino acid
+    int aa_new = GetIndexFromCodon(cdn_new);
+    
+    std::string mutation = std::to_string(g_num_) + '\t' + GetProtFromNuc(cdn_curr) + '\t' + std::to_string(resi) + '\t' + GetProtFromNuc(cdn_new);
+
+    // fetch primordial amino acid
+
+    //Ignore mutations to and from CYSTEINE
+    if ( (aa_new==2) || (aa_curr==2))
+    {
+        return "CYSTEINE\tNA\tNA\tNA";
+    }
+
+    if ( aa_curr == aa_new)
+    {
+        // SILENT
+        nucseq_.replace(cdn_start, 3, cdn_new);
+        Ns_ += 1;
+        return "SILENT\tNA\tNA\tNA";
+    }
+    else if (aa_primo == aa_new)
+    {
+        //REVERT TO WT
+
+        double x_curr = matrix[g_num_][resi][aa_curr-1];
+        assert( x_curr<DDG_min || x_curr>DDG_max); 
+          
+        dg_ /= x_curr;
+        nucseq_.replace(cdn_start, 3, cdn_new);
+        Na_ += 1;
+        return mutation;
+    }
+    else
+    {
+        //TYPICAL NON-SYNONYMOUS
+        double x_curr = matrix[g_num_][resi][aa_curr-1];
+        assert( x_curr<DDG_min || x_curr>DDG_max); 
+
+        // assign new DG value
+        // division account for wildtype background
+        dg_ /= x_curr;
+        dg_ *= x;
+        nucseq_.replace(cdn_start, 3, cdn_new);
+        Na_ += 1;
+        return mutation;
+    }
+}
+
 
 /*
 This version of the mutation function draws the DDG value from a gaussian distribution
@@ -282,124 +366,32 @@ std::string Gene::Mutate_Stabil(int i, int j)
     }
 
     if( aa_curr == aa_new){//SILENT
-          nucseq_.replace(cdn_start, 3, cdn_new);
-          Ns_ += 1;
-          return "SILENT\tNA\tNA\tNA";
+        nucseq_.replace(cdn_start, 3, cdn_new);
+        Ns_ += 1;
+        return "SILENT\tNA\tNA\tNA";
     }
     else if(aa_primo == aa_new){//REVERT TO WT
 
-          double x_curr = matrix[g_num_][resi][aa_curr-1];
-          assert( x_curr<DDG_min || x_curr>DDG_max); 
+        double x_curr = matrix[g_num_][resi][aa_curr-1];
+        assert( x_curr<DDG_min || x_curr>DDG_max); 
           
-          dg_ /= x_curr;
-          nucseq_.replace(cdn_start, 3, cdn_new);
-          Na_ += 1;
-          return mutation;
+        dg_ /= x_curr;
+        nucseq_.replace(cdn_start, 3, cdn_new);
+        Na_ += 1;
+        return mutation;
     }
     else{//TYPICAL NON-SYNONYMOUS
 
-          double x_curr = matrix[g_num_][resi][aa_curr-1];
-          assert( x_curr<DDG_min || x_curr>DDG_max); 
+        double x_curr = matrix[g_num_][resi][aa_curr-1];
+        assert( x_curr<DDG_min || x_curr>DDG_max); 
 
-          // assign new DG value
-          // division account for wildtype background
-          dg_ /= x_curr;
-          dg_ *= x;
-          nucseq_.replace(cdn_start, 3, cdn_new);
-          Na_ += 1;
-          return mutation;
-    }
-}
-
-/*
-This version of the mutation function draws the selection coefficient value from a gamma or normal distribution
-* VZ: It seems only randomNormal is used here
-*/
-double Gene::Mutate_Select_Dist(int i, int j)
-{ 
-    if(i>=ln_){
-        std::cerr << "ERROR: Mutation site out of bounds."<< std::endl;
-        exit(2);
-    }       
-
-    if (randomNumber() <= fNs)
-    {
-        // non-synonymous mutation
-        double s = randomNormal();
-        double wf = f_ + s;
-        f_ *= wf;
+        // assign new DG value
+        // division account for wildtype background
+        dg_ /= x_curr;
+        dg_ *= x;
+        nucseq_.replace(cdn_start, 3, cdn_new);
         Na_ += 1;
-        return s;
-    }
-    else
-    {
-        Ns_ += 1;
-        return 1;
-    }
-}
-
-/*
-This version of the mutation function gets the DDG value from the DDG matrix
-input by the user.
-INPUT: 
-    i -> site to mutate
-    j -> bp to mutate to
-
-VZ: I believe the function description is wrong because it was copied
-    from Mutate_Stabil, because in this case, the matrix stores DMS
-    data, not DDG.
-*/
-std::string Gene::Mutate_Select(int i, int j)
-{ 
-    // extract codon to be mutated
-    int cdn_ndx = (i%3);
-    int cdn_start = i - cdn_ndx; 
-    int resi = cdn_start/3;
-
-    // fetch current codon
-    std::string cdn_curr = nucseq_.substr(cdn_start, 3);
-    // fetch current amino acid
-    int aa_curr = GetIndexFromCodon(cdn_curr);
-    std::string cdn_new = cdn_curr;
-
-    std::string s = PrimordialAASeq.at(g_num_);     
-
-    // get mutated bp
-    std::string bp = AdjacentBP( cdn_curr.substr(cdn_ndx, 1), j); //new BP
-   
-    // mutate codon
-    cdn_new.replace(cdn_ndx, 1, bp);
-    // check for stop codon
-    cdn_new = n3_to_n3(cdn_new, cdn_curr, cdn_ndx);
-    // get new amino acid
-    int aa_new = GetIndexFromCodon(cdn_new);
-    
-    // get selection coefficient from matrix
-    double new_s = matrix[g_num_][resi][aa_new-1];
-
-    // Gene number, FROM, residue number, TO
-    std::string mutation = std::to_string(g_num_) + '\t' + GetProtFromNuc(cdn_curr) + '\t' + std::to_string(resi) + '\t' + GetProtFromNuc(cdn_new);
-
-    // fetch primordial amino acid
-
-    //Ignore mutations to and from CYSTEINE
-    if( (aa_new==2) || (aa_curr==2)){
-        return "CYSTEINE\tNA\tNA\tNA";
-    }
-
-    if( aa_curr == aa_new){//SILENT
-          nucseq_.replace(cdn_start, 3, cdn_new);
-          Ns_ += 1;
-          return "SILENT\tNA\tNA\tNA";
-    }
-    else{//TYPICAL NON-SYNONYMOUS 
-
-          // assign new fitness value
-          double new_f = f_ + new_s;
-          f_ = f_ * new_f;
-          nucseq_.replace(cdn_start, 3, cdn_new);
-          Na_ += 1;
-          return mutation;
+        return mutation;
     }
 }
 
@@ -440,6 +432,42 @@ void Gene::Update_Sequences(const std::string DNAsequence)
     nucseq_ = DNAsequence;
 }
 
+
+void Gene::loadBiophysicalParameters(std::string path)
+{
+    // load json...
+    std::ifstream in(path);
+    json data;
+    in >> data;
+    keyResidueNumbers_ = data["key_residue_numbers"];
+    drug_penetration_factor_ = data["drug_penetration"];
+    for (auto& it : data["genotypes"])
+    {
+        std::string key;
+        // Assert length of identifier
+        for (auto& character : it["identifer"])
+        {
+            key += character.get<std::string>();
+        }
+        biophysicalParam param(it["k_cat/K_m"], it["K_i"]);
+        biophysicalParameters_.insert({key, param});
+    }
+    identifyGenotype();
+}
+
+
+void Gene::identifyGenotype()
+{
+    std::string newGenotype;
+    for (auto& resid : keyResidueNumbers_)
+    {
+        int residueIndex = resid - 1;
+        newGenotype += nucseq_[residueIndex];
+    }
+    genotype_ = newGenotype;
+}
+
+
 // from Privalov 1979 (see also: Serohijos & Shakhnovich 2013)
 // Boltzmann probability of the gene product to be in the native state
 double Gene::Pnat()
@@ -472,6 +500,19 @@ double Gene::misfolded(bool stochastic)
     {
         return conc_ * (1 - Pnat());
     }
+}
+
+
+double Gene::enzymaticFlux(bool stochastic)
+{
+    double abundance;
+    if (stochastic)
+        abundance = stochastic_conc_ * Pnat();
+    else
+        abundance = conc_ * Pnat();
+    double flux = (rel_kcat_over_km_ * abundance) /
+        (1 + drug_penetration_factor_ * DRUG_CONCENTRATION / k_i_);
+    return flux;        
 }
 
 

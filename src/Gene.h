@@ -3,6 +3,7 @@
 #define GENE_H
 
 #include <random>
+#include <unordered_map>
 
 #include "rng.h"
 
@@ -22,6 +23,8 @@ Copyright (C) 2017 Louis Gauthier
     You should have received a copy of the GNU General Public License
     along with SodaPop.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+typedef std::pair<double, double> biophysicalParam;
 
 //! Represents a single protein-encoding gene.
 class Gene 
@@ -60,18 +63,20 @@ public:
   
     // Gene mutation functions
 
+    //! Mutate, updating biophysical parameters
+    std::string mutate(int site, int bp);
+
     //! Draw DDG from Normal(1, 1.7)
     double Mutate_Stabil_Gaussian(int, int);
     //! Draw DDG from DDG matrix.
     std::string Mutate_Stabil(int, int);
-    //! Draw selection coefficient from normal distribution.
-    double Mutate_Select_Dist(int, int);
-    //! Draw selection coefficient from matrix.
-    std::string Mutate_Select(int, int);
 
     //! Updates the current DNA sequence.
     void Update_Sequences(std::string);
  
+    void loadBiophysicalParameters(std::string path);
+    void identifyGenotype();
+
     // Basically a bunch of setters for private members
     void ch_dg(const double a) {dg_ = a;}
     void ch_conc(const double c) {conc_ = c;}
@@ -103,8 +108,10 @@ public:
 
     double CheckDG();           // this function is not implemented?
     double Pnat();
+    //! Returns
     double functional(bool stochastic=false);
     double misfolded(bool stochastic=false);
+    double enzymaticFlux(bool stochastic=false);
     
 private:
     int g_num_;		// numeric ID pointing to primordial gene
@@ -126,6 +133,14 @@ private:
     double stochastic_scale_;
     double OU_tau_ = 0;
     double OU_diffusion_ = 0;
+
+    // Biophysical parameters
+    std::unordered_map<std::string, biophysicalParam> biophysicalParameters_;
+    std::vector<int> keyResidueNumbers_;
+    std::string genotype_;
+    double drug_penetration_factor_;
+    double rel_kcat_over_km_;
+    double k_i_;
 
     static std::gamma_distribution<> gamma_;
     static std::normal_distribution<> normal_;
