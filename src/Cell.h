@@ -61,7 +61,7 @@ protected:
     // Array of genes.
     std::vector<Gene> Gene_arr_;
     // Cumulative sum of gene lengths (i.e. genome size).
-    VectInt Gene_L_;
+    std::vector<int> Gene_L_;
 };
 
 
