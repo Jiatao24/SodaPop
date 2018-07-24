@@ -85,6 +85,7 @@ double PolyCell::toxicity()
 }
 
 // METABOLIC FLUX FITNESS FUNCTION
+// FLUX AND TOXICITY COMBINED
 double PolyCell::metabolicOutput()
 {
     double flux = 0;
@@ -120,7 +121,7 @@ double PolyCell::neutral()
     return 1;
 }
 
-// STOCHASTIC PROTEIN EXPRESSION
+// STOCHASTIC PROTEIN EXPRESSION (ALSO BASED ON FLUX)
 // it's basically metabolicOutput with stochastic concentration
 double PolyCell::stochasticExpression()
 {
@@ -145,22 +146,24 @@ double PolyCell::stochasticExpression()
     return (fitness < 0) ? 0 : fitness;
 }
 
-// ENZYMATIC OUTPUT (Presumes that there is only a single gene)
+// ENZYMATIC OUTPUT (ALSO BASED ON FLUX)
+// (Presumes that there is only a single gene)
 double PolyCell::enzymaticOutput()
 {
     auto first_gene = Gene_arr_.front();
-    double fitness = first_gene.functional()
-        / (X_FACTOR + first_gene.functional());
+    double fitness = first_gene.enzymaticFlux()
+        / (X_FACTOR + first_gene.enzymaticFlux());
     return fitness;
 }
 
-// STOCHASTIC ENZYMATIC OUTPUT (Presumes that there is only a single gene)
+// STOCHASTIC ENZYMATIC OUTPUT (ALSO BASED ON FLUX)
+//(Presumes that there is only a single gene)
 double PolyCell::stochasticEnzymaticOutput()
 {
     auto& first_gene = Gene_arr_.front();
     first_gene.update_stochastic_conc_OU();
-    double fitness = first_gene.functional(true)
-        / (X_FACTOR + first_gene.functional(true));
+    double fitness = first_gene.enzymaticFlux(true)
+        / (X_FACTOR + first_gene.enzymaticFlux(true));
     return fitness;
 }
 
@@ -203,28 +206,8 @@ void PolyCell::ranmut_Gene(std::ofstream& log, int ctr)
     int bp = (int) (3 * randomNumber());
 
     double wi = fitness();
-    if(fromS_)
-    {
-        if(useDist_)
-        {
-            (*j).Mutate_Select_Dist(site,bp);
-        }
-        else
-        {
-            mutation = (*j).Mutate_Select(site,bp);
-        }
-    }
-    else
-    {
-        if(useDist_)
-        {
-            (*j).Mutate_Stabil_Gaussian(site,bp);
-        }
-        else
-        {
-            mutation = (*j).Mutate_Stabil(site,bp);
-        }
-    }
+
+    mutation = j->mutate(site, bp);
 
     UpdateRates();
     double wf = fitness();
@@ -267,30 +250,8 @@ void PolyCell::ranmut_Gene()
     }
 
     int bp = (int) (3 * randomNumber());
-    // what is the input type?
-    if (fromS_)
-    {
-        if (useDist_)
-        {
-            (*j).Mutate_Select_Dist(site, bp);
-        }
-        else
-        {
-            (*j).Mutate_Select(site, bp);
-        }
-    }
-    else
-    {
-        if (useDist_)
-        {
-            (*j).Mutate_Stabil_Gaussian(site, bp);
-        }
-        else
-        {
-            (*j).Mutate_Stabil(site, bp);
-        }
-    }
-         
+    j->mutate(site, bp);
+
     UpdateRates();
 }
 
