@@ -41,7 +41,6 @@ int main(int argc, char *argv[])
     bool createPop = false;
     bool useShort = false;
 
-    std::string inputType;
     std::string geneListFile, genesPath;
     std::string outDir, startSnapFile, matrixFile;
 
@@ -68,8 +67,8 @@ int main(int argc, char *argv[])
         // fitness function
         TCLAP::ValueArg<int> fitArg("f","fitness","Fitness function",false,1,"integer ID");
     
-        // boolean switch to use DDG as input type
-        TCLAP::ValueArg<std::string> inputArg("","sim-type","Define simulation type\n<s> (from selection coefficient, DMS or otherwise)\n<stability> (from DDG matrix or distribution)", false,"s","string");
+        // // boolean switch to use DDG as input type
+        // TCLAP::ValueArg<std::string> inputArg("","sim-type","Define simulation type\n<s> (from selection coefficient, DMS or otherwise)\n<stability> (from DDG matrix or distribution)", false,"s","string");
 
         //use gamma distribution to draw selection coefficients
         TCLAP::SwitchArg gammaArg("","gamma","Draw selection coefficients from gamma distribution", cmd, false);
@@ -123,7 +122,6 @@ int main(int argc, char *argv[])
         cmd.add(matrixArg);
         cmd.add(alphaArg);
         cmd.add(betaArg);
-        cmd.add(inputArg);
 
         // Parse the argv array.
         cmd.parse(argc, argv);
@@ -138,8 +136,6 @@ int main(int argc, char *argv[])
         startSnapFile = startArg.getValue();
         genesPath = libArg.getValue();
 
-        inputType = inputArg.getValue();
-
         if (seedArg.isSet())
             setRngSeed(seedArg.getValue());
 
@@ -147,57 +143,57 @@ int main(int argc, char *argv[])
             setRngStream(streamArg.getValue());
 
         std::cout << "Begin ... " << std::endl;
-        if (inputType == "s")
-        {
-            PolyCell::fromS_ = true;
-            PolyCell::ff_ = 4;
-            std::cout << "Initializing matrix ..." << std::endl;
-            InitMatrix();
-            std::cout << "Loading primordial genes file ..." << std::endl;
-            LoadPrimordialGenes(geneListFile,genesPath);
-            // if matrix is given
-            if(matrixArg.isSet())
-            {
-                matrixFile = matrixArg.getValue();
-                std::cout << "Extracting DMS matrix ..." << std::endl;
-                ExtractDMSMatrix(matrixFile.c_str());
-            }
-            else
-            {
-                PolyCell::useDist_ = true;
-                if (gammaArg.isSet())
-                {
-                    double shape = alphaArg.getValue();
-                    double scale = betaArg.getValue();
-                    Gene::setGammaParams(shape, scale);
-                }
-                else if (normalArg.isSet())
-                {
-                    double mean = alphaArg.getValue();
-                    double stddev = betaArg.getValue();
-                    Gene::setNormalParams(mean, stddev);
-                }
-            }
-        }
-        else if (inputType == "stability")
-        {
-            std::cout << "Initializing matrix ..." << std::endl;
-            InitMatrix();
-            std::cout << "Loading primordial genes file ..." << std::endl;
-            LoadPrimordialGenes(geneListFile,genesPath);
-            PolyCell::ff_ = fitArg.getValue();
-            // if DDG matrix is given
-            if (matrixArg.isSet())
-            {
-                matrixFile = matrixArg.getValue();
-                std::cout << "Extracting PDDG matrix ..." << std::endl;
-                ExtractPDDGMatrix(matrixFile.c_str());
-            }
-            else
-            {
-                PolyCell::useDist_ = true;
-            }
-        }
+        // if (inputType == "s")
+        // {
+        //     PolyCell::fromS_ = true;
+        //     PolyCell::ff_ = 4;
+        //     std::cout << "Initializing matrix ..." << std::endl;
+        //     InitMatrix();
+        //     std::cout << "Loading primordial genes file ..." << std::endl;
+        //     LoadPrimordialGenes(geneListFile,genesPath);
+        //     // if matrix is given
+        //     if(matrixArg.isSet())
+        //     {
+        //         matrixFile = matrixArg.getValue();
+        //         std::cout << "Extracting DMS matrix ..." << std::endl;
+        //         ExtractDMSMatrix(matrixFile.c_str());
+        //     }
+        //     else
+        //     {
+        //         PolyCell::useDist_ = true;
+        //         if (gammaArg.isSet())
+        //         {
+        //             double shape = alphaArg.getValue();
+        //             double scale = betaArg.getValue();
+        //             Gene::setGammaParams(shape, scale);
+        //         }
+        //         else if (normalArg.isSet())
+        //         {
+        //             double mean = alphaArg.getValue();
+        //             double stddev = betaArg.getValue();
+        //             Gene::setNormalParams(mean, stddev);
+        //         }
+        //     }
+        // }
+        // else if (inputType == "stability")
+        // {
+        //     std::cout << "Initializing matrix ..." << std::endl;
+        //     InitMatrix();
+        //     std::cout << "Loading primordial genes file ..." << std::endl;
+        //     LoadPrimordialGenes(geneListFile,genesPath);
+        //     PolyCell::ff_ = fitArg.getValue();
+        //     // if DDG matrix is given
+        //     if (matrixArg.isSet())
+        //     {
+        //         matrixFile = matrixArg.getValue();
+        //         std::cout << "Extracting PDDG matrix ..." << std::endl;
+        //         ExtractPDDGMatrix(matrixFile.c_str());
+        //     }
+        //     else
+        //     {
+        //         PolyCell::useDist_ = true;
+        //     }
+        // }
 
         enableAnalysis = analysisArg.getValue();
         trackMutations = eventsArg.getValue();
