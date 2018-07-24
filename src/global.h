@@ -68,6 +68,7 @@ const double A_FACTOR = 0.025; // see Serohijos & Shakhnovich 2013
                                 // A_factor = sum_i{1/abundance_i}
 const double fNs = 0.775956284; //fraction of non-synonymous substitutions in a typical protein
 extern double X_FACTOR;
+extern double DRUG_CONCENTRATION;
 
 
 // exponent values are precalculated to be used readily
