@@ -150,7 +150,7 @@ double PolyCell::stochasticExpression()
 // (Presumes that there is only a single gene)
 double PolyCell::enzymaticOutput()
 {
-    auto first_gene = Gene_arr_.front();
+    auto& first_gene = Gene_arr_.front();
     double fitness = first_gene.enzymaticFlux()
         / (X_FACTOR + first_gene.enzymaticFlux());
     return fitness;
@@ -174,7 +174,6 @@ double PolyCell::fitness()
 
 void PolyCell::UpdateRates()
 {
-    auto gene = Gene_arr_.front();
     fitness_ = (this->*fit)();
 }
 
