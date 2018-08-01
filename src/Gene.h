@@ -35,24 +35,15 @@ public:
 
     /*! Constructor
      *
-     * @param g_num    Gene number. Index for global variable
-     *                 std::vector<std::string> PrimordialAASeq
-     * @param nucseq   Nucleic acid sequence as string.
-     * @param conc     Abundance level of the gene product.
-     */
-    Gene(int g_num, std::string nucseq, double conc);
-
-    /*! Constructor
-     *
      * @param gene_in  Should be file stream to text file with gene parameters.
      */
     Gene(std::fstream& gene_in);
 
-    //! Copy constructor (is this necessary?)
-    Gene(const Gene&); 
+    // //! Copy constructor (is this necessary?)
+    // Gene(const Gene&); 
   
     bool operator==(Gene&);
-    Gene& operator=(const Gene&); // is this necessary?
+    // Gene& operator=(const Gene&); // is this necessary?
 
     // Static functions to set probability distribution params or draw
     // random value.
@@ -63,7 +54,7 @@ public:
   
     // Gene mutation functions
 
-    //! Mutate, updating biophysical parameters
+    //! Mutate, updating biophysical enzyme parameters
     std::string mutate(int site, int bp);
 
     //! Draw DDG from Normal(1, 1.7)
@@ -71,10 +62,12 @@ public:
     //! Draw DDG from DDG matrix.
     std::string Mutate_Stabil(int, int);
 
-    //! Updates the current DNA sequence.
-    void Update_Sequences(std::string);
+    //! Change DNA sequence to new input.
+    void Update_Sequences(std::string DNAsequence);
  
+    //! Parse json file of biophysical parameters.
     void loadBiophysicalParameters(std::string path);
+    //! Determine the biophysical genotype of the current sequence.
     void identifyGenotype();
 
     // Basically a bunch of setters for private members
@@ -108,9 +101,12 @@ public:
 
     double CheckDG();           // this function is not implemented?
     double Pnat();
-    //! Returns
+
+    //! Returns effective (functional) protein abundance.
     double functional(bool stochastic=false);
     double misfolded(bool stochastic=false);
+    //! Returns enzymatic output, which depends on abundance and
+    //! biophysical catalytic properties.
     double enzymaticFlux(bool stochastic=false);
     
 private:

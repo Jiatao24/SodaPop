@@ -25,39 +25,6 @@ Gene::Gene()
       e_ = 0;
 }
 
-// Input: gene number, nuc. sequence, concentration
-Gene::Gene(const int g_num, const std::string nucseq, double conc) :
-    g_num_(g_num),
-    nucseq_(nucseq),
-    conc_(conc)
-{
-    if ((nucseq.length() % 3) != 0)
-    {
-        std::cerr << "Invalid length for nucleotide sequence: "
-		  << nucseq.length() << std::endl;
-        exit(2);
-    }
-    else
-    {
-        ln_ = nucseq_.length();
-        la_ = ln_ / 3;
-        std::string aaseq = GetProtFromNuc(nucseq_);
-        // Check for stop codons in midsequence.
-        std::string::size_type loc = aaseq.find("X", 0 );
-        if (loc != std::string::npos)
-	{
-            std::cerr << "ERROR: DNA sequence has STOP codons." << std::endl;
-            exit(2);
-        }           
-        dg_ = 1;
-        f_ = 1;
-        stochastic_conc_ = conc_;
-        e_ = 0;
-        Na_ = 0;
-        Ns_ = 0;
-    }
-}
-
 // Input: gene file
 Gene::Gene(std::fstream& gene_in)
 {
@@ -146,7 +113,7 @@ Gene::Gene(std::fstream& gene_in)
             loadBiophysicalParameters(word);
         }
         else if (word == "//")
-	    ; // Do nothing
+            ;                   // no action
     }
 
     init_stochastic_conc();
@@ -154,25 +121,26 @@ Gene::Gene(std::fstream& gene_in)
     Ns_ = 0;
 }
 
-// copy constructor
-Gene::Gene(const Gene& G)
-{
-    g_num_ = G.g_num_;
-    ln_ = G.ln_;
-    la_ = G.la_;
-    nucseq_ = G.nucseq_;
-    dg_ = G.dg_;
-    f_ = G.f_;
-    conc_ = G.conc_;
-    stochastic_shape_ = G.stochastic_shape_;
-    stochastic_scale_ = G.stochastic_scale_;
-    stochastic_conc_ = G.stochastic_conc_;
-    OU_tau_ = G.OU_tau_;
-    OU_diffusion_ = G.OU_diffusion_;
-    e_ = G.e_;
-    Na_ = G.Na_;
-    Ns_ = G.Ns_;
-}
+// // copy constructor
+// // this is dangerous right now, we're not copying everything.
+// Gene::Gene(const Gene& G)
+// {
+//     g_num_ = G.g_num_;
+//     ln_ = G.ln_;
+//     la_ = G.la_;
+//     nucseq_ = G.nucseq_;
+//     dg_ = G.dg_;
+//     f_ = G.f_;
+//     conc_ = G.conc_;
+//     stochastic_shape_ = G.stochastic_shape_;
+//     stochastic_scale_ = G.stochastic_scale_;
+//     stochastic_conc_ = G.stochastic_conc_;
+//     OU_tau_ = G.OU_tau_;
+//     OU_diffusion_ = G.OU_diffusion_;
+//     e_ = G.e_;
+//     Na_ = G.Na_;
+//     Ns_ = G.Ns_;
+// }
 
 
 // Genes are equal if DNA sequence and concentration are equal.
@@ -185,102 +153,101 @@ bool Gene::operator== (Gene& G)
 	return false;
 }
 
-// assignment overloading
-// Do we need this?
-Gene& Gene::operator=(const Gene& A)
-{ 
-    if (this != &A){
-        this->g_num_ = A.g_num_;
-        this->ln_ = A.ln_;
-        this->la_ = A.la_;
-        this->dg_ = A.dg_;
-        this->f_ = A.f_;
-        this->stochastic_shape_ = A.stochastic_shape_;
-        this->stochastic_scale_ = A.stochastic_scale_;
-        this->stochastic_conc_ = A.stochastic_conc_;
-        this->OU_tau_ = A.OU_tau_;
-        this->OU_diffusion_ = A.OU_diffusion_;
-        this->conc_ = A.conc_;
-        this->e_ = A.e_;
-        this->Na_ = A.Na_;
-        this->Ns_ = A.Ns_;
-        (this->nucseq_).assign(A.nucseq_);
-    }
-    return *this;
-}
+// // assignment overloading
+// Gene& Gene::operator=(const Gene& A)
+// { 
+//     if (this != &A){
+//         this->g_num_ = A.g_num_;
+//         this->ln_ = A.ln_;
+//         this->la_ = A.la_;
+//         this->dg_ = A.dg_;
+//         this->f_ = A.f_;
+//         this->stochastic_shape_ = A.stochastic_shape_;
+//         this->stochastic_scale_ = A.stochastic_scale_;
+//         this->stochastic_conc_ = A.stochastic_conc_;
+//         this->OU_tau_ = A.OU_tau_;
+//         this->OU_diffusion_ = A.OU_diffusion_;
+//         this->conc_ = A.conc_;
+//         this->e_ = A.e_;
+//         this->Na_ = A.Na_;
+//         this->Ns_ = A.Ns_;
+//         (this->nucseq_).assign(A.nucseq_);
+//     }
+//     return *this;
+// }
 
 
 // Mutate, updating biophysical parameters
-// TODO: write this function
+// This is the version of the function that simply changes residue.
 std::string Gene::mutate(int site, int bp)
 {
-    // extract codon to be mutated
-    int cdn_ndx = (site % 3);
-    int cdn_start = site - cdn_ndx; 
-    int resi = cdn_start / 3;
+    std::string oldGenotype = genotype_;
 
-    // fetch current codon
-    std::string cdn_curr = nucseq_.substr(cdn_start, 3);
-    // fetch current amino acid
-    int aa_curr = GetIndexFromCodon(cdn_curr);
-    std::string cdn_new = cdn_curr;
+    // Codon to be mutated indexing.
+    int codon_index = (site % 3); // Position within the codon
+    int codon_start = site - codon_index; 
+    int resi = codon_start / 3; // Residue index
 
-    std::string s = PrimordialAASeq.at(g_num_);     
-    int aa_primo = GetIndexFromAA(s.at(resi));
+    // Fetch current codon.
+    std::string codon_current = nucseq_.substr(codon_start, 3);
+    // Fetch current amino acid.
+    int aa_current = GetIndexFromCodon(codon_current);
+    std::string codon_new = codon_current; // New codon.
 
-    // get mutated bp
-    std::string new_bp = AdjacentBP( cdn_curr.substr(cdn_ndx, 1), bp); //new BP
+    // Get mutated bp.
+    std::string new_bp = AdjacentBP(codon_current.substr(codon_index, 1), bp);
    
-    // mutate codon
-    cdn_new.replace(cdn_ndx, 1, new_bp);
-    // check for stop codon
-    cdn_new = n3_to_n3(cdn_new, cdn_curr, cdn_ndx);
+    // Mutate codon
+    codon_new.replace(codon_index, 1, new_bp);
+    // Check for stop codon
+    codon_new = n3_to_n3(codon_new, codon_current, codon_index);
     // get new amino acid
-    int aa_new = GetIndexFromCodon(cdn_new);
+    int aa_new = GetIndexFromCodon(codon_new);
     
-    std::string mutation = std::to_string(g_num_) + '\t' + GetProtFromNuc(cdn_curr) + '\t' + std::to_string(resi) + '\t' + GetProtFromNuc(cdn_new);
+    std::string mutation;
 
-    // fetch primordial amino acid
-
-    //Ignore mutations to and from CYSTEINE
-    if ( (aa_new==2) || (aa_curr==2))
+    // Ignore mutations to and from CYSTEINE.
+    if ( (aa_new==2) || (aa_current==2))
     {
-        return "CYSTEINE\tNA\tNA\tNA";
+        mutation = "CYSTEINE\tNA\tNA\tNA";
     }
 
-    if ( aa_curr == aa_new)
+    if (aa_current == aa_new)
     {
         // SILENT
-        nucseq_.replace(cdn_start, 3, cdn_new);
+        nucseq_.replace(codon_start, 3, codon_new);
         Ns_ += 1;
-        return "SILENT\tNA\tNA\tNA";
+        mutation = "SILENT\tNA\tNA\tNA";
     }
-    else if (aa_primo == aa_new)
-    {
-        //REVERT TO WT
+    // We ignore this situation where we're reverting to the primordial seq.
+    // else if (aa_primo == aa_new)
+    // {
+    //     //REVERT TO WT
 
-        double x_curr = matrix[g_num_][resi][aa_curr-1];
-        assert( x_curr<DDG_min || x_curr>DDG_max); 
+    //     double x_current = matrix[g_num_][resi][aa_current-1];
+    //     assert( x_current<DDG_min || x_current>DDG_max); 
           
-        dg_ /= x_curr;
-        nucseq_.replace(cdn_start, 3, cdn_new);
-        Na_ += 1;
-        return mutation;
-    }
+    //     dg_ /= x_current;
+    //     nucseq_.replace(codon_start, 3, codon_new);
+    //     Na_ += 1;
+    //     return mutation;
+    // }
     else
     {
         //TYPICAL NON-SYNONYMOUS
-        double x_curr = matrix[g_num_][resi][aa_curr-1];
-        assert( x_curr<DDG_min || x_curr>DDG_max); 
-
-        // assign new DG value
-        // division account for wildtype background
-        dg_ /= x_curr;
-        dg_ *= x;
-        nucseq_.replace(cdn_start, 3, cdn_new);
+        nucseq_.replace(codon_start, 3, codon_new);
         Na_ += 1;
-        return mutation;
+        mutation = std::to_string(g_num_) + '\t' + GetProtFromNuc(codon_current)
+            + '\t' + std::to_string(resi + 1) + '\t' + GetProtFromNuc(codon_new);
     }
+
+    identifyGenotype();
+    if (genotype_ != oldGenotype)
+    {
+        mutation = std::to_string(g_num_) + '\t' + oldGenotype
+            + '\t' + std::to_string(resi + 1) + '\t' + genotype_;
+    }
+    return mutation;
 }
 
 
@@ -433,38 +400,63 @@ void Gene::Update_Sequences(const std::string DNAsequence)
 }
 
 
+// Parse json file of biophysical parameters.
 void Gene::loadBiophysicalParameters(std::string path)
 {
     // load json...
     std::ifstream in(path);
     json data;
     in >> data;
-    keyResidueNumbers_ = data["key_residue_numbers"];
+    keyResidueNumbers_ = data["key_residue_numbers"].get<std::vector<int>>();
+    unsigned int numKeyResidues = keyResidueNumbers_.size();
     drug_penetration_factor_ = data["drug_penetration"];
     for (auto& it : data["genotypes"])
     {
         std::string key;
         // Assert length of identifier
-        for (auto& character : it["identifer"])
+        if (it["identifier"].size() != numKeyResidues)
+        {
+            throw "Invalid identifier length!";
+        }
+        for (auto& character : it["identifier"])
         {
             key += character.get<std::string>();
         }
         biophysicalParam param(it["k_cat/K_m"], it["K_i"]);
         biophysicalParameters_.insert({key, param});
     }
+
     identifyGenotype();
 }
 
 
+// Determine the biophysical genotype of the current sequence.
 void Gene::identifyGenotype()
 {
     std::string newGenotype;
+    // Determine identity of key residues.
     for (auto& resid : keyResidueNumbers_)
     {
         int residueIndex = resid - 1;
-        newGenotype += nucseq_[residueIndex];
+        int codon_start = residueIndex * 3;
+        std::string codon = nucseq_.substr(codon_start, 3);
+        newGenotype += GetProtFromNuc(codon);
     }
     genotype_ = newGenotype;
+
+    auto it = biophysicalParameters_.find(genotype_);
+    if (it == biophysicalParameters_.end())
+    {
+        // Genotypes not enumerated have 0 enzymatic output (and 0 fitness).
+        rel_kcat_over_km_ = 0;
+        k_i_ = 1;
+    }
+    else
+    {
+        biophysicalParam param = it->second;
+        rel_kcat_over_km_ = param.first;
+        k_i_ = param.second;
+    }
 }
 
 
@@ -490,6 +482,7 @@ double Gene::functional(bool stochastic)
 }
 
 // Number of misfolded copies in the cell
+// concentration * (1 - pnat)
 double Gene::misfolded(bool stochastic)
 {
     if (stochastic)
@@ -502,7 +495,8 @@ double Gene::misfolded(bool stochastic)
     }
 }
 
-
+// Returns enzymatic output, which depends on abundance and
+// biophysical catalytic properties.
 double Gene::enzymaticFlux(bool stochastic)
 {
     double abundance;
@@ -510,9 +504,13 @@ double Gene::enzymaticFlux(bool stochastic)
         abundance = stochastic_conc_ * Pnat();
     else
         abundance = conc_ * Pnat();
-    double flux = (rel_kcat_over_km_ * abundance) /
+    // note that conc_ and stochastic_conc_ are actually abundances
+    // Multiply by 1e9 to convert to nM.
+    double concentration = 1e9 * abundance / AVOGADRO / CELL_VOLUME;
+    double flux = (rel_kcat_over_km_ * concentration) /
         (1 + drug_penetration_factor_ * DRUG_CONCENTRATION / k_i_);
-    return flux;        
+
+    return flux;
 }
 
 
