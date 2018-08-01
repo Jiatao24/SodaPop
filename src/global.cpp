@@ -4,8 +4,8 @@
 // Global variables (mutable).
 VectStr PrimordialAASeq;
 double matrix[max_gene][max_resi][20];
-double X_FACTOR = 1;           // FOR DHFR
-double DRUG_CONCENTRATION;
+double X_FACTOR = 1.3;           // FOR DHFR
+double DRUG_CONCENTRATION = 10; // nM
 
 
 /******* MAPPING FUNCTIONS *******/
@@ -425,7 +425,7 @@ double Ran_Gaussian(const double mean, const double sigma)
     return mean + sigma * y * sqrt (-2.0 * log (r2) / r2);
 }
 
-// Loads primordial genes in a VectStr
+// Loads primordial genes in a std::vector<std::string>
 void LoadPrimordialGenes(const std::string& genelistfile, const std::string& genesPath)
 {  
     std::fstream genelistIN (genelistfile.c_str());
@@ -468,8 +468,6 @@ void LoadPrimordialGenes(const std::string& genelistfile, const std::string& gen
                       size_t loc = aaseq.find("X", 0);
                       assert( loc == std::string::npos ); // no match
                       auto iter = PrimordialAASeq.begin();
-		      // Here, is insert the right operation? given reserve is previously called
-		      // well it probably works given that it's still here.
                       PrimordialAASeq.insert(iter+gn, aaseq); 
                       flag_AASeq += 1;
                   }

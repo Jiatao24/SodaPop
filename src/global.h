@@ -76,6 +76,8 @@ const double DDG_min = exp(-1*(ddG_min)/kT);
 const double DDG_max = exp(-1*(ddG_max)/kT);
 const int Bigbuffer_max = 80;
 constexpr double PI  = 3.141592653589793238463;
+constexpr double AVOGADRO = 6.02214e23;
+constexpr double CELL_VOLUME = 7e-16; // in liters (L)
 
 
 // If the mutation is to a stop codon

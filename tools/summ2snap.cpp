@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
             std::fstream temp (word.c_str());
             if (!temp.is_open())
             {
-                std::cerr << "File could not be open: "<< word <<std::endl;
+                std::cerr << "File could not be open: " << word <<std::endl;
                 exit(1);
             }
             PolyCell A(temp);
