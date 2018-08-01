@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
     bool trackMutations = false;
     bool createPop = false;
     bool useShort = false;
+    bool rampingDrug = false;
 
     std::string geneListFile, genesPath;
     std::string outDir, startSnapFile, matrixFile;
@@ -107,10 +108,13 @@ int main(int argc, char *argv[])
         // X_FACTOR
         TCLAP::ValueArg<double> xfactorArg("x", "x-factor", "Enzymatic output factor.", false, 0, "positive double");
 
+        TCLAP::ValueArg<double> concentrationArg("", "concentration", "Amount of drug present (nM)", false, 0, "non-negative double");
+
+        TCLAP::SwitchArg rampingArg("", "ramping", "Drug concentration adjusts to population fitness.", cmd, false);
+
         // Add the arguments to the CmdLine object.
         cmd.add(seedArg);
         cmd.add(streamArg);
-        cmd.add(xfactorArg);
         cmd.add(maxArg);
         cmd.add(popArg);
         cmd.add(dtArg);
@@ -122,6 +126,8 @@ int main(int argc, char *argv[])
         cmd.add(matrixArg);
         cmd.add(alphaArg);
         cmd.add(betaArg);
+        cmd.add(xfactorArg);
+        cmd.add(concentrationArg);
 
         // Parse the argv array.
         cmd.parse(argc, argv);
@@ -143,6 +149,14 @@ int main(int argc, char *argv[])
             setRngStream(streamArg.getValue());
 
         std::cout << "Begin ... " << std::endl;
+        // // even though we won't use the matrix
+        // std::cout << "Initializing matrix ..." << std::endl;
+        // InitMatrix();
+        // // even though we don't need primordial genes.
+        // std::cout << "Loading primordial genes file ..." << std::endl;
+        // LoadPrimordialGenes(geneListFile, genesPath);
+        PolyCell::ff_ = fitArg.getValue();
+
         // if (inputType == "s")
         // {
         //     PolyCell::fromS_ = true;
@@ -199,6 +213,7 @@ int main(int argc, char *argv[])
         trackMutations = eventsArg.getValue();
         useShort = shortArg.getValue();
         createPop = initArg.getValue();
+        rampingDrug = rampingArg.getValue();
 
         if (xfactorArg.isSet())
         {
@@ -207,6 +222,17 @@ int main(int argc, char *argv[])
             {
                 std::cerr << "error: --x-factor argument not positive ("
                           << X_FACTOR << ")\n";
+                exit(1);
+            }
+        }
+
+        if (concentrationArg.isSet())
+        {
+            DRUG_CONCENTRATION = concentrationArg.getValue();
+            if (DRUG_CONCENTRATION < 0)
+            {
+                std::cerr << "error: --concentration argument < 0 ("
+                          << DRUG_CONCENTRATION << ")\n";
                 exit(1);
             }
         }
@@ -259,6 +285,7 @@ int main(int argc, char *argv[])
     }
     else
     {
+        // This section may not be validated for stochastic concentration.
         // ELSE IT MUST BE POPULATED CELL BY CELL FROM SNAP FILE
         // Note number of cells is Total_Cell_Count
         Cell_arr.reserve(populationSize);
