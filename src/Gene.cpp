@@ -246,8 +246,12 @@ std::string Gene::mutate(int site, int bp)
     {
         mutation = std::to_string(g_num_) + '\t' + oldGenotype
             + '\t' + std::to_string(resi + 1) + '\t' + genotype_;
+        return mutation;
     }
-    return mutation;
+    else
+    {
+        return "";
+    }
 }
 
 

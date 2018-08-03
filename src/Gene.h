@@ -89,6 +89,7 @@ public:
 
     double conc() const {return conc_;}
     double stochastic_conc() const {return stochastic_conc_;}
+    std::string genotype() const {return genotype_;}
 
     //! Pick a random value for stochastic concentration.
     double init_stochastic_conc();

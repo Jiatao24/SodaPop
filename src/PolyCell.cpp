@@ -216,11 +216,14 @@ void PolyCell::ranmut_Gene(std::ofstream& log, int ctr)
     // we could save all mutations with abs(s) >= some value x
 
     // Barcode, Gene number, FROM, residue number, TO, Fitness difference, Generation count
-    log << barcode().c_str() << "\t";
-    log << std::fixed;
-    log << mutation << "\t";
-    log << s << "\t";		// fitness difference wf - wi
-    log << ctr << std::endl;		// generation count
+    if (mutation.size() > 0)
+    {
+        log << barcode().c_str() << "\t";
+        log << std::fixed;
+        log << mutation << "\t";
+        log << s << "\t";		// fitness difference wf - wi
+        log << ctr << std::endl;		// generation count
+    }
 }
 
 void PolyCell::ranmut_Gene()
