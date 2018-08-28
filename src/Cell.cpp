@@ -183,3 +183,29 @@ void Cell::init_gene_stochastic_concentrations()
         gene.init_stochastic_conc();
     }
 }
+
+
+std::string Cell::get_genotype()
+{
+    std::string genotype;
+    int count(0);
+    for (auto& gene : Gene_arr_)
+    {
+        if (count > 0)
+            genotype += "|";
+        genotype += gene.genotype();
+        count++;
+    }
+    return genotype;
+}
+
+
+std::vector<double> Cell::get_abundances()
+{
+    std::vector<double> abundances;
+    for (auto& gene : Gene_arr_)
+    {
+        abundances.push_back(gene.stochastic_conc());
+    }
+    return abundances;
+}

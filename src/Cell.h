@@ -42,11 +42,14 @@ public:
     double mrate() {return c_mrate_;}
     int gene_count() {return Gene_arr_.size();}
     int genome_size() {return Gene_L_.back();}
-    std::string barcode() {return barcode_;}   
+    std::string barcode() {return barcode_;}
 
     // Setters
     void change_ID(int a) {ID_ = a;}
     void ch_barcode(std::string s) {barcode_ = s;}
+
+    std::string get_genotype();
+    std::vector<double> get_abundances();
 
 protected:
     // Organism barcode
