@@ -421,6 +421,7 @@ void Gene::loadBiophysicalParameters(std::string path)
         if (it["identifier"].size() != numKeyResidues)
         {
             throw "Invalid identifier length!";
+            // All identifiers should be the same length.
         }
         for (auto& character : it["identifier"])
         {

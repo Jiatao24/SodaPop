@@ -4,6 +4,8 @@
 
 #include <gsl/gsl_randist.h>
 
+#include "nlohmann/json.hpp"
+
 #include "rng.h"
 #include "global.h"
 #include "PolyCell.h"
@@ -26,6 +28,127 @@ Copyright (C) 2017 Louis Gauthier
     along with SodaPop.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using json = nlohmann::json;
+
+void countGenotypes(std::vector<PolyCell> cells,
+                    std::map<std::string, unsigned int>& genotypeCounts)
+{
+    for (auto& cell : cells)
+    {
+        std::string genotype = cell.get_genotype();
+        auto search = genotypeCounts.find(genotype);
+        if (search == genotypeCounts.end())
+        {
+            genotypeCounts.insert({genotype, 1});
+        }
+        else
+        {
+            search->second++;
+        }
+    }
+    return;
+}
+
+
+//! Save a more succint text-based snapshot of genotype populations.
+void saveSnapshot(char* buffer, std::vector<PolyCell>& cells,
+                  int generationNumber)
+{
+    // Do genotype counting
+    std::map<std::string, unsigned int> genotypeCounts;
+    countGenotypes(cells, genotypeCounts);
+
+    // We also want fitnesses
+    // We do repeat ourselves here
+    // (fitnesses are also calculated in main)
+    std::map<std::string, double> genotypeFitnesses;
+
+    // Fill genotypeFitnesses and count genotype populations.
+    for (auto& cell : cells)
+    {
+        std::string genotype = cell.get_genotype();
+        double fitness = cell.fitness();
+        auto search = genotypeFitnesses.find(genotype);
+        if (search == genotypeFitnesses.end())
+            genotypeFitnesses.insert({genotype, fitness});
+        else
+            search->second += fitness;
+    }
+
+    // Get average for each genotype by dividing by count
+    for (auto& it : genotypeFitnesses)
+    {
+        it.second /= (double)genotypeCounts[it.first];
+    }
+
+    // Calculate the overall average fitness.
+    double averageFitness(0);
+    for (auto& it : genotypeFitnesses)
+    {
+        averageFitness += it.second * genotypeCounts[it.first];
+    }
+    averageFitness /= (double)cells.size();
+
+    // Let's get abundances
+    int gene_count = cells.front().gene_count();
+    std::vector<double> abundances(gene_count, 0);
+    std::map<std::string, std::vector<double>> genotypeAbundances;
+
+    // Fill abundance data only if fitness is stochastic concentration.
+    if (PolyCell::ff_ == 8)
+    {
+        for (auto& cell : cells)
+        {
+            std::vector<double> cell_abundances = cell.get_abundances();
+            std::string genotype = cell.get_genotype();
+
+            auto search = genotypeAbundances.find(genotype);
+            if (search == genotypeAbundances.end())
+            {
+                genotypeAbundances.insert(
+                    {genotype, std::vector<double>(gene_count, 0)});
+            }
+
+            // Instead of getting mean by dividing by cell count
+            //   later, just divide each value by count right now.
+            //   who knows if it's worse performance anyway?
+            for (int i=0; i<gene_count; i++)
+            {
+                abundances[i] += cell_abundances[i] / (double)cells.size();
+                genotypeAbundances[genotype][i] +=
+                    cell_abundances[i] / (double)genotypeCounts[genotype];
+            }
+        }
+    }
+
+    // Open snapshot file
+    std::fstream OUT2(buffer, std::ios::out);
+    if (!OUT2.is_open())
+    {
+         std::cerr << "Output file could not be opened";
+         exit(1);
+    }
+
+    json output;
+    output["generation"] = generationNumber;
+    output["population"] = cells.size();
+    output["drug level (nM)"] = DRUG_CONCENTRATION;
+    output["average fitness"] = averageFitness;
+    output["genotypes"] = genotypeCounts;
+    output["genotype fitnesses"] = genotypeFitnesses;
+    if (PolyCell::ff_ == 8)
+    {
+        output["average abundances"] = abundances;
+        output["genotype abundances"] = genotypeAbundances;
+    }
+    OUT2 << std::setw(2) << output << std::endl;
+
+    OUT2.close();   
+    
+    return;
+}
+
+
 int main(int argc, char *argv[])
 {
     // these variables will hold the parameters input (or not) by the user
@@ -44,6 +167,8 @@ int main(int argc, char *argv[])
 
     std::string geneListFile, genesPath;
     std::string outDir, startSnapFile, matrixFile;
+
+    std::map<std::string, unsigned int> genotypeCounts;
 
     // Wrap everything in a try block
     // errors in input are caught and explained to user
@@ -300,43 +425,11 @@ int main(int argc, char *argv[])
     }
     startsnap.close();
 
-    std::cout << "Saving initial population snapshot ... " << std::endl;
+    std::cout << "Saving initial genotype counts ... " << std::endl;
     // save initial population snapshot
-    sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
+    sprintf(buffer, "%s/%s.gen%010d.json", outPath.c_str(),
             outDir.c_str(), generationNumber); 
-
-    // Open snapshot file
-    std::fstream OUT2(buffer, std::ios::out | std::ios::binary);
-    if (!OUT2.is_open())
-    {
-         std::cerr << "Snapshot file could not be opened";
-         exit(1);
-    }
-
-    Total_Cell_Count = Cell_arr.size();
-    OUT2.write((char*)(&frame_time), sizeof(double));
-    OUT2.write((char*)(&TIME), sizeof(double));
-    OUT2.write((char*)(&Total_Cell_Count), sizeof(int));
-
-    if (useShort)
-    {
-        for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
-        {
-            it->dumpShort(OUT2);
-        } 
-    }
-    else
-    {
-        int l=1;
-        // dump snapshot of initial population and get sum of fitnesses
-        for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
-        {
-            it->dump(OUT2, l);
-            l++;
-        } 
-    }
-    
-    OUT2.close();   
+    saveSnapshot(buffer, Cell_arr, (int)frame_time);
 
     std::ofstream MUTATIONLOG;
     if (trackMutations)
@@ -420,44 +513,38 @@ int main(int argc, char *argv[])
         
         // update generation counter
         generationNumber++; 
+     
         // save population snapshot every DT generations
         if ((generationNumber % DT) == 0)
         {
-             sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
+             sprintf(buffer, "%s/%s.gen%010d.json", outPath.c_str(),
                      outDir.c_str(), generationNumber); 
 
-             // Open snapshot file
-             std::fstream OUT2(buffer, std::ios::out | std::ios::binary);
-             if (!OUT2.is_open())
-             {
-                 std::cerr << "Snapshot file could not be opened";
-                 exit(1);
-             }
-      
-             double frame_time = generationNumber;
-             OUT2.write((char*)(&frame_time), sizeof(double));
-             OUT2.write((char*)(&TIME), sizeof(double)); // this is always 0?
-             OUT2.write((char*)(&Total_Cell_Count), sizeof(int));
+             saveSnapshot(buffer, Cell_arr, generationNumber);
+             std::cout << "Generation: " << generationNumber << std::endl;
+        }
 
-             if (useShort)
-             {
-                 for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
-                 {
-                     it->dumpShort(OUT2);
-                 } 
-             }
-             else
-             {
-                 int l=1;
-                 for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
-                 {
-                     it->dump(OUT2, l);
-                     l++;
-                 }
-             }
-              
-             OUT2.close();
-         }
+        if (rampingDrug)
+        {
+            // Calculate a fitness average
+            double fitnessTotal(0);
+            for (auto& fitness : fitnesses)
+            {
+                fitnessTotal += fitness;
+            }
+            double fitnessAverage = fitnessTotal / (double)fitnesses.size();
+
+            if (fitnessAverage > 0.5)
+            {
+                DRUG_CONCENTRATION *= DRUG_INCREASE_FACTOR;
+            }
+            else
+            {
+                DRUG_CONCENTRATION /= DRUG_INCREASE_FACTOR;
+            }
+            // I suppose there could be some checks to make sure
+            // DRUG_CONCENTRATION stays in some bounds.
+        }
     }
 
     MUTATIONLOG.close();
