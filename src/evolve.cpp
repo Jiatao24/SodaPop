@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <sstream>
 
 #include <tclap/CmdLine.h>
 
@@ -26,6 +27,9 @@ Copyright (C) 2017 Louis Gauthier
     
     You should have received a copy of the GNU General Public License
     along with SodaPop.  If not, see <http://www.gnu.org/licenses/>.
+
+
+github branch tmp_resistance_fixation_probability
  */
 
 using json = nlohmann::json;
@@ -155,6 +159,7 @@ int main(int argc, char *argv[])
     int generationNumber = 0;
     int generationMax = generationNumber + 1;
     int mutationCount = 0;
+    int equilibrationGens = 0;
     double populationSize=1;
     int DT = 1;
     double TIME = 0;            // This is never updated?
@@ -163,12 +168,13 @@ int main(int argc, char *argv[])
     bool trackMutations = false;
     bool createPop = false;
     bool useShort = false;
-    bool rampingDrug = false;
+    bool mutateArgSet = false;
 
     std::string geneListFile, genesPath;
     std::string outDir, startSnapFile, matrixFile;
 
-    std::map<std::string, unsigned int> genotypeCounts;
+    int mutateGNum = 0, mutateResid = 1;
+    std::string mutateResname;
 
     // Wrap everything in a try block
     // errors in input are caught and explained to user
@@ -237,6 +243,11 @@ int main(int argc, char *argv[])
 
         TCLAP::SwitchArg rampingArg("", "ramping", "Drug concentration adjusts to population fitness.", cmd, false);
 
+        TCLAP::ValueArg<int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");
+
+        TCLAP::ValueArg<std::string> mutateArg("", "mutate", "Single mutation to introduce", false, "", "string consisting of \"g_num:resid:resname\", e.g. \"0:21:L\"");
+
+
         // Add the arguments to the CmdLine object.
         cmd.add(seedArg);
         cmd.add(streamArg);
@@ -253,6 +264,8 @@ int main(int argc, char *argv[])
         cmd.add(betaArg);
         cmd.add(xfactorArg);
         cmd.add(concentrationArg);
+        cmd.add(equilArg);
+        cmd.add(mutateArg);
 
         // Parse the argv array.
         cmd.parse(argc, argv);
@@ -266,6 +279,8 @@ int main(int argc, char *argv[])
         outDir = prefixArg.getValue();
         startSnapFile = startArg.getValue();
         genesPath = libArg.getValue();
+
+        equilibrationGens = equilArg.getValue();
 
         if (seedArg.isSet())
             setRngSeed(seedArg.getValue());
@@ -282,63 +297,10 @@ int main(int argc, char *argv[])
         // LoadPrimordialGenes(geneListFile, genesPath);
         PolyCell::ff_ = fitArg.getValue();
 
-        // if (inputType == "s")
-        // {
-        //     PolyCell::fromS_ = true;
-        //     PolyCell::ff_ = 4;
-        //     std::cout << "Initializing matrix ..." << std::endl;
-        //     InitMatrix();
-        //     std::cout << "Loading primordial genes file ..." << std::endl;
-        //     LoadPrimordialGenes(geneListFile,genesPath);
-        //     // if matrix is given
-        //     if(matrixArg.isSet())
-        //     {
-        //         matrixFile = matrixArg.getValue();
-        //         std::cout << "Extracting DMS matrix ..." << std::endl;
-        //         ExtractDMSMatrix(matrixFile.c_str());
-        //     }
-        //     else
-        //     {
-        //         PolyCell::useDist_ = true;
-        //         if (gammaArg.isSet())
-        //         {
-        //             double shape = alphaArg.getValue();
-        //             double scale = betaArg.getValue();
-        //             Gene::setGammaParams(shape, scale);
-        //         }
-        //         else if (normalArg.isSet())
-        //         {
-        //             double mean = alphaArg.getValue();
-        //             double stddev = betaArg.getValue();
-        //             Gene::setNormalParams(mean, stddev);
-        //         }
-        //     }
-        // }
-        // else if (inputType == "stability")
-        // {
-        //     std::cout << "Initializing matrix ..." << std::endl;
-        //     InitMatrix();
-        //     std::cout << "Loading primordial genes file ..." << std::endl;
-        //     LoadPrimordialGenes(geneListFile,genesPath);
-        //     PolyCell::ff_ = fitArg.getValue();
-        //     // if DDG matrix is given
-        //     if (matrixArg.isSet())
-        //     {
-        //         matrixFile = matrixArg.getValue();
-        //         std::cout << "Extracting PDDG matrix ..." << std::endl;
-        //         ExtractPDDGMatrix(matrixFile.c_str());
-        //     }
-        //     else
-        //     {
-        //         PolyCell::useDist_ = true;
-        //     }
-        // }
-
         enableAnalysis = analysisArg.getValue();
         trackMutations = eventsArg.getValue();
         useShort = shortArg.getValue();
         createPop = initArg.getValue();
-        rampingDrug = rampingArg.getValue();
 
         if (xfactorArg.isSet())
         {
@@ -360,6 +322,19 @@ int main(int argc, char *argv[])
                           << DRUG_CONCENTRATION << ")\n";
                 exit(1);
             }
+        }
+
+        if (mutateArg.isSet())
+        {
+            mutateArgSet = true;
+            std::istringstream stream(mutateArg.getValue());
+            std::string temp;
+            std::getline(stream, temp, ':');
+            mutateGNum = std::stoi(temp);
+            std::getline(stream, temp, ':');
+            mutateResid = std::stoi(temp);
+            std::getline(stream, temp, ':');
+            mutateResname = temp;
         }
 
     }
@@ -476,28 +451,19 @@ int main(int argc, char *argv[])
             cell_it++;
         }
         
-        // Now go through each cell for mutation
+        // Make the single mutation
+        if (generationNumber == equilibrationGens && mutateArgSet)
+        {
+            auto& selectedCell = Cell_temp[randomNumber() * populationSize];
+            selectedCell.mutGene(mutateGNum, mutateResid, mutateResname);
+        }
+
+        // Now go through each cell to update fitness (stochastic gene expression)
         for (auto& cell : Cell_temp)
         {
-            if (cell.mrate() * cell.genome_size() > randomNumber())
-            {
-                mutationCount++;
-                if (trackMutations)
-                {
-                    // mutate and write mutation to file
-                    cell.ranmut_Gene(MUTATIONLOG, generationNumber);
-                }
-                else
-                {
-                    cell.ranmut_Gene();
-                }       
-            }
-            else
-            {
-                // Even if we don't mutate, update the fitness.
-                // In stochastic gene expression, fitness will change.
-                cell.UpdateRates();
-            }
+            // Even if we don't mutate, update the fitness.
+            // In stochastic gene expression, fitness will change.
+            cell.UpdateRates();
         }
 
         Total_Cell_Count = (int)(Cell_temp.size());
@@ -505,12 +471,6 @@ int main(int argc, char *argv[])
         // swap population with initial vector
         Cell_arr.swap(Cell_temp);
 
-        // update Ns and Na for each cell
-        for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
-        {
-            it->UpdateNsNa();
-        }
-        
         // update generation counter
         generationNumber++; 
      
@@ -524,27 +484,17 @@ int main(int argc, char *argv[])
              std::cout << "Generation: " << generationNumber << std::endl;
         }
 
-        if (rampingDrug)
+        // Stop simulation if
+        if (generationNumber > equilibrationGens)
         {
-            // Calculate a fitness average
-            double fitnessTotal(0);
-            for (auto& fitness : fitnesses)
+            std::map<std::string, unsigned int> genotypeCounts;
+            countGenotypes(Cell_arr, genotypeCounts);
+            if (genotypeCounts.size() == 1)
             {
-                fitnessTotal += fitness;
+                break;
             }
-            double fitnessAverage = fitnessTotal / (double)fitnesses.size();
-
-            if (fitnessAverage > 0.5)
-            {
-                DRUG_CONCENTRATION *= DRUG_INCREASE_FACTOR;
-            }
-            else
-            {
-                DRUG_CONCENTRATION /= DRUG_INCREASE_FACTOR;
-            }
-            // I suppose there could be some checks to make sure
-            // DRUG_CONCENTRATION stays in some bounds.
         }
+
     }
 
     MUTATIONLOG.close();
