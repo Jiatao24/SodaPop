@@ -34,6 +34,7 @@ github branch tmp_resistance_fixation_probability
 
 using json = nlohmann::json;
 
+//! Find all genotypes and their population levels.
 void countGenotypes(std::vector<PolyCell> cells,
                     std::map<std::string, unsigned int>& genotypeCounts)
 {
@@ -54,7 +55,7 @@ void countGenotypes(std::vector<PolyCell> cells,
 }
 
 
-//! Save a more succint text-based snapshot of genotype populations.
+//! Save a json-based snapshot of genotype populations.
 void saveSnapshot(char* buffer, std::vector<PolyCell>& cells,
                   int generationNumber)
 {
@@ -93,12 +94,12 @@ void saveSnapshot(char* buffer, std::vector<PolyCell>& cells,
     }
     averageFitness /= (double)cells.size();
 
-    // Let's get abundances
+    // Let's get protein abundances.
     int gene_count = cells.front().gene_count();
     std::vector<double> abundances(gene_count, 0);
     std::map<std::string, std::vector<double>> genotypeAbundances;
 
-    // Fill abundance data only if fitness is stochastic concentration.
+    // We get abundance data only if fitness is stochastic concentration.
     if (PolyCell::ff_ == 8)
     {
         for (auto& cell : cells)
@@ -145,29 +146,29 @@ void saveSnapshot(char* buffer, std::vector<PolyCell>& cells,
         output["average abundances"] = abundances;
         output["genotype abundances"] = genotypeAbundances;
     }
-    OUT2 << std::setw(2) << output << std::endl;
 
+    // Here we output.
+    OUT2 << std::setw(2) << output << std::endl;
     OUT2.close();   
     
     return;
 }
 
 
+// MAIN MAIN MAIN
 int main(int argc, char *argv[])
 {
-    // these variables will hold the parameters input (or not) by the user
+    // These variables will hold simulation parameters, some of which
+    //   are modifiable by the user through command line arguments.
     int generationNumber = 0;
     int generationMax = generationNumber + 1;
     int mutationCount = 0;
     int equilibrationGens = 0;
     double populationSize=1;
     int DT = 1;
-    double TIME = 0;            // This is never updated?
+    double TIME = 0;            // Hmmm, This is never updated?
     char buffer[200];
-    bool enableAnalysis = false;
     bool trackMutations = false;
-    bool createPop = false;
-    bool useShort = false;
     bool mutateArgSet = false;
 
     std::string geneListFile, genesPath;
@@ -201,31 +202,10 @@ int main(int argc, char *argv[])
     
         // // boolean switch to use DDG as input type
         // TCLAP::ValueArg<std::string> inputArg("","sim-type","Define simulation type\n<s> (from selection coefficient, DMS or otherwise)\n<stability> (from DDG matrix or distribution)", false,"s","string");
-
-        //use gamma distribution to draw selection coefficients
-        TCLAP::SwitchArg gammaArg("","gamma","Draw selection coefficients from gamma distribution", cmd, false);
-
-        //use normal distribution to draw selection coefficients
-        TCLAP::SwitchArg normalArg("","normal","Draw selection coefficients from normal distribution", cmd, false);
-
-        //first parameter of distribution
-        TCLAP::ValueArg<double> alphaArg("","alpha","Alpha parameter of distribution\nGamma -> shape\nNormal -> mean",false,1,"double");
-
-        //second parameter of distribution
-        TCLAP::ValueArg<double> betaArg("","beta","Beta parameter of distribution\nGamma -> scale\nNormal -> S.D.",false,1,"double");
-
-        // boolean switch to create population from scratch
-        TCLAP::SwitchArg initArg("c","create-single","Create initial population on the fly", cmd, false);
-    
-        // boolean switch to enable analysis
-        TCLAP::SwitchArg analysisArg("a","analysis","Enable analysis scripts", cmd, false);
     
         // boolean switch to track mutations
         TCLAP::SwitchArg eventsArg("e","track-events","Track mutation events", cmd, false);
     
-        // boolean switch to use short format for snapshots
-        TCLAP::SwitchArg shortArg("s","short-format","Use short format for population snapshots", cmd, false);
-
         // RNG seed
         TCLAP::ValueArg<unsigned long> seedArg("", "seed", "Seed value for RNG.", false, 0, "unsigned int (64-bit)");
 
@@ -260,8 +240,6 @@ int main(int argc, char *argv[])
         cmd.add(libArg);
         cmd.add(fitArg);
         cmd.add(matrixArg);
-        cmd.add(alphaArg);
-        cmd.add(betaArg);
         cmd.add(xfactorArg);
         cmd.add(concentrationArg);
         cmd.add(equilArg);
@@ -297,10 +275,7 @@ int main(int argc, char *argv[])
         // LoadPrimordialGenes(geneListFile, genesPath);
         PolyCell::ff_ = fitArg.getValue();
 
-        enableAnalysis = analysisArg.getValue();
         trackMutations = eventsArg.getValue();
-        useShort = shortArg.getValue();
-        createPop = initArg.getValue();
 
         if (xfactorArg.isSet())
         {
@@ -335,6 +310,13 @@ int main(int argc, char *argv[])
             mutateResid = std::stoi(temp);
             std::getline(stream, temp, ':');
             mutateResname = temp;
+
+            std::cout << "--mutate = \"" << mutateArg.getValue() << "\"." << std::endl;
+            std::cout << "At generation " << equilibrationGens
+                      << ", a single cell will receive mutation to gene num "
+                      << mutateGNum << " , at residue "
+                      << mutateResid << ", to residue "
+                      << mutateResname << "." << std::endl;
         }
 
     }
@@ -368,36 +350,17 @@ int main(int argc, char *argv[])
     std::vector<double> fitnesses(populationSize, 0.);
     // double w_sum = 0;
 
-    // IF POPULATION IS INITIALLY MONOCLONAL
     // CREATE VECTOR WITH populationSize CELLS
-    if (createPop)
+    std::cout << "Creating a population of " << populationSize << " cells ..."
+              << std::endl;
+    PolyCell A(startsnap, genesPath);
+    Cell_arr = std::vector<PolyCell>(populationSize, A);
+    for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
     {
-        std::cout << "Creating a population of " << populationSize << " cells ..."
-                  << std::endl;
-        PolyCell A(startsnap, genesPath);
-        Cell_arr = std::vector<PolyCell>(populationSize, A);
-        for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
-        {
-             it->ch_barcode(getBarcode());
-             it->init_gene_stochastic_concentrations();
-             it->UpdateRates();
-        } 
-    }
-    else
-    {
-        // This section may not be validated for stochastic concentration.
-        // ELSE IT MUST BE POPULATED CELL BY CELL FROM SNAP FILE
-        // Note number of cells is Total_Cell_Count
-        Cell_arr.reserve(populationSize);
-        int count = 0;
-        std::cout << "Constructing population from source "
-                  << startSnapFile.c_str() << " ..." << std::endl;
-        while (count < Total_Cell_Count && !startsnap.eof())
-        {
-            Cell_arr.emplace_back(startsnap, genesPath);
-            count++;
-        }
-    }
+        it->ch_barcode(getBarcode());
+        it->init_gene_stochastic_concentrations();
+        it->UpdateRates();
+    } 
     startsnap.close();
 
     std::cout << "Saving initial genotype counts ... " << std::endl;
@@ -421,7 +384,7 @@ int main(int argc, char *argv[])
     
     std::cout << "Starting evolution ..." << std::endl;
 
-    // Setup GSL-style RNG for multinomial.
+    // Setup GSL-style RNG for multinomial distribution function.
     gsl_rng *r_gsl;
     r_gsl = gsl_rng_alloc(&gsl_rng_pcg);
 
@@ -451,11 +414,13 @@ int main(int argc, char *argv[])
             cell_it++;
         }
         
-        // Make the single mutation
-        if (generationNumber == equilibrationGens && mutateArgSet)
+        // Make the single mutation if it's time to do so.
+        if (mutateArgSet && generationNumber == equilibrationGens)
         {
-            auto& selectedCell = Cell_temp[randomNumber() * populationSize];
+            auto& selectedCell = Cell_temp[(int)(randomNumber() * populationSize)];
             selectedCell.mutGene(mutateGNum, mutateResid, mutateResname);
+            std::cout << "At generation " << generationNumber
+                      << ", mutated a single cell." << std::endl;
         }
 
         // Now go through each cell to update fitness (stochastic gene expression)
@@ -491,6 +456,13 @@ int main(int argc, char *argv[])
             countGenotypes(Cell_arr, genotypeCounts);
             if (genotypeCounts.size() == 1)
             {
+                std::cout << "Number of genotypes == 1. Stopping simulation at "
+                          << generationNumber << " generations" << std::endl;
+                sprintf(buffer, "%s/%s.gen%010d.json", outPath.c_str(),
+                        outDir.c_str(), generationNumber); 
+
+                saveSnapshot(buffer, Cell_arr, generationNumber);
+                std::cout << "Final generation: " << generationNumber << std::endl;
                 break;
             }
         }
@@ -500,17 +472,6 @@ int main(int argc, char *argv[])
     MUTATIONLOG.close();
     std::cout << "Done." << std::endl;
     std::cout << "Total number of mutation events: " << mutationCount << std::endl;
-
-    // if the user toggled analysis, call shell script
-    if (enableAnalysis)
-    {
-        std::string script = "/path/to/barcodes.sh";
-        std::string command = script+" "+outDir+" "+std::to_string(generationMax)+" "+std::to_string(populationSize)+" "+std::to_string(DT)+" "+std::to_string((int) useShort);
-        std::cout << "Call analysis using the following command:" << std::endl;
-        std::cout << command << std::endl;
-        // const char *cmd = command.c_str();
-        // system(cmd);
-    }
 
     gsl_rng_free(r_gsl);
     return 0;
