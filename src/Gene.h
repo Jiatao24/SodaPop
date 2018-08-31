@@ -56,6 +56,8 @@ public:
 
     //! Mutate, updating biophysical enzyme parameters
     std::string mutate(int site, int bp);
+    //! Mutate specific residue to specific animo acid
+    std::string mutate(int resid, std::string resname);
 
     //! Draw DDG from Normal(1, 1.7)
     double Mutate_Stabil_Gaussian(int, int);

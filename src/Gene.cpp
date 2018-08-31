@@ -186,7 +186,7 @@ std::string Gene::mutate(int site, int bp)
     // Codon to be mutated indexing.
     int codon_index = (site % 3); // Position within the codon
     int codon_start = site - codon_index; 
-    int resi = codon_start / 3; // Residue index
+    int resi = codon_start / 3; // Residue index (0-based)
 
     // Fetch current codon.
     std::string codon_current = nucseq_.substr(codon_start, 3);
@@ -252,6 +252,56 @@ std::string Gene::mutate(int site, int bp)
     {
         return "";
     }
+}
+
+
+std::string Gene::mutate(int resid, std::string resname)
+{
+    int codon_start = (resid - 1) * 3;
+    std::string codon_old = nucseq_.substr(codon_start, 3);
+
+    // Validity check: resname is a valid 1-letter AA
+    auto search = prot_to_num::pnum.find(resname);
+    if (search == prot_to_num::pnum.end())
+    {
+        std::cerr
+            << "Gene::mutate(resid, resname) error: invalid 1-letter AA name: "
+            << resname << std::endl;
+        exit(2);
+    }
+
+    // Find new codon: search through codon to resname map and take
+    //   first codon found that gives desired resname.
+    std::string codon_new;
+    bool found_codon = false;
+    for (auto& it : codon_to_prot::cprot)
+    {
+        if (it.second == resname)
+        {
+            codon_new = it.first;
+            found_codon = true;
+            break;
+        }
+    }
+
+    if (!found_codon)
+    {
+        // This should not happen since we already checked the
+        // validity of resname.
+        std::cerr << "Gene::mutate(resid, resname) error: "
+                  << "codon for resname '" << resname << "' not found"
+                  << std::endl;
+        exit(2);
+    }
+
+    // Do the replacement
+    nucseq_.replace(codon_start, 3, codon_new);
+    identifyGenotype();
+
+    std::string mutation = std::to_string(g_num_) + '\t' + GetProtFromNuc(codon_old)
+            + '\t' + std::to_string(resid) + '\t' + GetProtFromNuc(codon_new);
+
+    return mutation;
 }
 
 
