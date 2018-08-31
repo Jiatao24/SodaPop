@@ -265,7 +265,7 @@ void PolyCell::ranmut_Gene()
 // UpdateRates is not called!!!!
 void PolyCell::mutGene(int g_num, int resid, std::string resname)
 {
-    auto gene = Gene_arr_[g_num];
+    auto& gene = Gene_arr_[g_num];
     gene.mutate(resid, resname);
     return;
 }
