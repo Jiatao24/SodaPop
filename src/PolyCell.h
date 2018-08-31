@@ -49,6 +49,7 @@ public:
 
     void ranmut_Gene();
     void ranmut_Gene(std::ofstream&, int);
+    void mutGene(int g_num, int resid, std::string resname);
     void dump(std::fstream&, int);
     void dumpShort(std::fstream&);
     void PrintCell(int);

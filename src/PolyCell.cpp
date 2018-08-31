@@ -257,6 +257,20 @@ void PolyCell::ranmut_Gene()
     UpdateRates();
 }
 
+
+// Mutate a specific residue in a specific gene to the named amino
+//   acid.
+// Because of various legacies, g_num is 0-indexed, but resid
+//   starts at 1.
+// UpdateRates is not called!!!!
+void PolyCell::mutGene(int g_num, int resid, std::string resname)
+{
+    auto gene = Gene_arr_[g_num];
+    gene.mutate(resid, resname);
+    return;
+}
+
+
 // Dump cell information to binary file
 // Ordering is
 // cell_index, cell_id, barcode size, barcode, fitness, mutation rate (c_mrate), n_genes.
