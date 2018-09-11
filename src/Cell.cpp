@@ -123,15 +123,15 @@ Cell::Cell(std::fstream& IN, const std::string& genesPath)
         }
         Gene G(gene_data);   
         //update gene information
-        dg = exp(-dg/kT);
-        // Ideally we should have a Gene constructor instead of
-        //   setters for these private variables.
-        G.ch_dg(dg);
-        G.ch_conc(c);
-        G.ch_f(f);
-        G.Update_Sequences(DNAsequence);
-        G.ch_Na(Na);
-        G.ch_Ns(Ns); 
+        // dg = exp(-dg/kT);
+        // // Ideally we should have a Gene constructor instead of
+        // //   setters for these private variables.
+        // G.ch_dg(dg);
+        // G.ch_conc(c);
+        // G.ch_f(f);
+        // G.Update_Sequences(DNAsequence);
+        // G.ch_Na(Na);
+        // G.ch_Ns(Ns); 
         Gene_arr_.push_back(G);
     }
 }
