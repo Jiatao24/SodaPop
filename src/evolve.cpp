@@ -168,8 +168,8 @@ int main(int argc, char *argv[])
     int DT = 1;
     double TIME = 0;            // Hmmm, This is never updated?
     char buffer[200];
-    bool trackMutations = false;
     bool mutateArgSet = false;
+    bool trackMutations = false;
 
     std::string geneListFile, genesPath;
     std::string outDir, startSnapFile, matrixFile;
@@ -311,10 +311,10 @@ int main(int argc, char *argv[])
             std::getline(stream, temp, ':');
             mutateResname = temp;
 
-            std::cout << "--mutate = \"" << mutateArg.getValue() << "\"." << std::endl;
-            std::cout << "At generation " << equilibrationGens
-                      << ", a single cell will receive mutation to gene num "
-                      << mutateGNum << " , at residue "
+            std::cout << "--mutate=\"" << mutateArg.getValue() << "\":" << std::endl;
+            std::cout << "  At generation " << equilibrationGens
+                      << ", mutate a single cell. Mutate gene num "
+                      << mutateGNum << ", at residue "
                       << mutateResid << ", to residue "
                       << mutateResname << "." << std::endl;
         }
@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
     startsnap.read((char*)(&TIME), sizeof(double));
     startsnap.read((char*)(&Total_Cell_Count), sizeof(int));
 
-    sprintf(buffer, "out/%s/snapshots", outDir.c_str());
+    sprintf(buffer, "%s/snapshots", outDir.c_str());
     std::string outPath = buffer;
     std::cout << "Creating directory " << outPath << " ... "
               << (makePath(outPath) ? "OK" : "failed") << std::endl;
@@ -414,6 +414,9 @@ int main(int argc, char *argv[])
             cell_it++;
         }
         
+        // update generation counter
+        generationNumber++; 
+     
         // Make the single mutation if it's time to do so.
         if (mutateArgSet && generationNumber == equilibrationGens)
         {
@@ -436,9 +439,6 @@ int main(int argc, char *argv[])
         // swap population with initial vector
         Cell_arr.swap(Cell_temp);
 
-        // update generation counter
-        generationNumber++; 
-     
         // save population snapshot every DT generations
         if ((generationNumber % DT) == 0)
         {
