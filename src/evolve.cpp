@@ -26,6 +26,8 @@ Copyright (C) 2017 Louis Gauthier
     
     You should have received a copy of the GNU General Public License
     along with SodaPop.  If not, see <http://www.gnu.org/licenses/>.
+
+git branch tmp_resistance
  */
 
 using json = nlohmann::json;
@@ -155,14 +157,12 @@ int main(int argc, char *argv[])
     int generationNumber = 0;
     int generationMax = generationNumber + 1;
     int mutationCount = 0;
+    int equilibrationGens = 0;
     double populationSize=1;
     int DT = 1;
     double TIME = 0;            // This is never updated?
     char buffer[200];
-    bool enableAnalysis = false;
     bool trackMutations = false;
-    bool createPop = false;
-    bool useShort = false;
     bool rampingDrug = false;
 
     std::string geneListFile, genesPath;
@@ -188,38 +188,12 @@ int main(int argc, char *argv[])
         TCLAP::ValueArg<std::string> startArg("p","pop-desc","Population description file",false,"null","filename");
         TCLAP::ValueArg<std::string> libArg("l","gene-lib","Gene library directory",false,"files/genes/","filename");
 
-        TCLAP::ValueArg<std::string> matrixArg("i","input","Input file defining the fitness landscape",false,"null","filename");
-    
         // fitness function
         TCLAP::ValueArg<int> fitArg("f","fitness","Fitness function",false,1,"integer ID");
-    
-        // // boolean switch to use DDG as input type
-        // TCLAP::ValueArg<std::string> inputArg("","sim-type","Define simulation type\n<s> (from selection coefficient, DMS or otherwise)\n<stability> (from DDG matrix or distribution)", false,"s","string");
-
-        //use gamma distribution to draw selection coefficients
-        TCLAP::SwitchArg gammaArg("","gamma","Draw selection coefficients from gamma distribution", cmd, false);
-
-        //use normal distribution to draw selection coefficients
-        TCLAP::SwitchArg normalArg("","normal","Draw selection coefficients from normal distribution", cmd, false);
-
-        //first parameter of distribution
-        TCLAP::ValueArg<double> alphaArg("","alpha","Alpha parameter of distribution\nGamma -> shape\nNormal -> mean",false,1,"double");
-
-        //second parameter of distribution
-        TCLAP::ValueArg<double> betaArg("","beta","Beta parameter of distribution\nGamma -> scale\nNormal -> S.D.",false,1,"double");
-
-        // boolean switch to create population from scratch
-        TCLAP::SwitchArg initArg("c","create-single","Create initial population on the fly", cmd, false);
-    
-        // boolean switch to enable analysis
-        TCLAP::SwitchArg analysisArg("a","analysis","Enable analysis scripts", cmd, false);
     
         // boolean switch to track mutations
         TCLAP::SwitchArg eventsArg("e","track-events","Track mutation events", cmd, false);
     
-        // boolean switch to use short format for snapshots
-        TCLAP::SwitchArg shortArg("s","short-format","Use short format for population snapshots", cmd, false);
-
         // RNG seed
         TCLAP::ValueArg<unsigned long> seedArg("", "seed", "Seed value for RNG.", false, 0, "unsigned int (64-bit)");
 
@@ -237,6 +211,8 @@ int main(int argc, char *argv[])
 
         TCLAP::SwitchArg rampingArg("", "ramping", "Drug concentration adjusts to population fitness.", cmd, false);
 
+        TCLAP::ValueArg<int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");        
+
         // Add the arguments to the CmdLine object.
         cmd.add(seedArg);
         cmd.add(streamArg);
@@ -248,11 +224,9 @@ int main(int argc, char *argv[])
         cmd.add(startArg);
         cmd.add(libArg);
         cmd.add(fitArg);
-        cmd.add(matrixArg);
-        cmd.add(alphaArg);
-        cmd.add(betaArg);
         cmd.add(xfactorArg);
         cmd.add(concentrationArg);
+        cmd.add(equilArg);
 
         // Parse the argv array.
         cmd.parse(argc, argv);
@@ -267,6 +241,8 @@ int main(int argc, char *argv[])
         startSnapFile = startArg.getValue();
         genesPath = libArg.getValue();
 
+        equilibrationGens = equilArg.getValue();
+
         if (seedArg.isSet())
             setRngSeed(seedArg.getValue());
 
@@ -274,70 +250,10 @@ int main(int argc, char *argv[])
             setRngStream(streamArg.getValue());
 
         std::cout << "Begin ... " << std::endl;
-        // // even though we won't use the matrix
-        // std::cout << "Initializing matrix ..." << std::endl;
-        // InitMatrix();
-        // // even though we don't need primordial genes.
-        // std::cout << "Loading primordial genes file ..." << std::endl;
-        // LoadPrimordialGenes(geneListFile, genesPath);
+
         PolyCell::ff_ = fitArg.getValue();
 
-        // if (inputType == "s")
-        // {
-        //     PolyCell::fromS_ = true;
-        //     PolyCell::ff_ = 4;
-        //     std::cout << "Initializing matrix ..." << std::endl;
-        //     InitMatrix();
-        //     std::cout << "Loading primordial genes file ..." << std::endl;
-        //     LoadPrimordialGenes(geneListFile,genesPath);
-        //     // if matrix is given
-        //     if(matrixArg.isSet())
-        //     {
-        //         matrixFile = matrixArg.getValue();
-        //         std::cout << "Extracting DMS matrix ..." << std::endl;
-        //         ExtractDMSMatrix(matrixFile.c_str());
-        //     }
-        //     else
-        //     {
-        //         PolyCell::useDist_ = true;
-        //         if (gammaArg.isSet())
-        //         {
-        //             double shape = alphaArg.getValue();
-        //             double scale = betaArg.getValue();
-        //             Gene::setGammaParams(shape, scale);
-        //         }
-        //         else if (normalArg.isSet())
-        //         {
-        //             double mean = alphaArg.getValue();
-        //             double stddev = betaArg.getValue();
-        //             Gene::setNormalParams(mean, stddev);
-        //         }
-        //     }
-        // }
-        // else if (inputType == "stability")
-        // {
-        //     std::cout << "Initializing matrix ..." << std::endl;
-        //     InitMatrix();
-        //     std::cout << "Loading primordial genes file ..." << std::endl;
-        //     LoadPrimordialGenes(geneListFile,genesPath);
-        //     PolyCell::ff_ = fitArg.getValue();
-        //     // if DDG matrix is given
-        //     if (matrixArg.isSet())
-        //     {
-        //         matrixFile = matrixArg.getValue();
-        //         std::cout << "Extracting PDDG matrix ..." << std::endl;
-        //         ExtractPDDGMatrix(matrixFile.c_str());
-        //     }
-        //     else
-        //     {
-        //         PolyCell::useDist_ = true;
-        //     }
-        // }
-
-        enableAnalysis = analysisArg.getValue();
         trackMutations = eventsArg.getValue();
-        useShort = shortArg.getValue();
-        createPop = initArg.getValue();
         rampingDrug = rampingArg.getValue();
 
         if (xfactorArg.isSet())
@@ -393,36 +309,17 @@ int main(int argc, char *argv[])
     std::vector<double> fitnesses(populationSize, 0.);
     // double w_sum = 0;
 
-    // IF POPULATION IS INITIALLY MONOCLONAL
     // CREATE VECTOR WITH populationSize CELLS
-    if (createPop)
+    std::cout << "Creating a population of " << populationSize << " cells ..."
+              << std::endl;
+    PolyCell A(startsnap, genesPath);
+    Cell_arr = std::vector<PolyCell>(populationSize, A);
+    for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
     {
-        std::cout << "Creating a population of " << populationSize << " cells ..."
-                  << std::endl;
-        PolyCell A(startsnap, genesPath);
-        Cell_arr = std::vector<PolyCell>(populationSize, A);
-        for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
-        {
-             it->ch_barcode(getBarcode());
-             it->init_gene_stochastic_concentrations();
-             it->UpdateRates();
-        } 
-    }
-    else
-    {
-        // This section may not be validated for stochastic concentration.
-        // ELSE IT MUST BE POPULATED CELL BY CELL FROM SNAP FILE
-        // Note number of cells is Total_Cell_Count
-        Cell_arr.reserve(populationSize);
-        int count = 0;
-        std::cout << "Constructing population from source "
-                  << startSnapFile.c_str() << " ..." << std::endl;
-        while (count < Total_Cell_Count && !startsnap.eof())
-        {
-            Cell_arr.emplace_back(startsnap, genesPath);
-            count++;
-        }
-    }
+        it->ch_barcode(getBarcode());
+        it->init_gene_stochastic_concentrations();
+        it->UpdateRates();
+    } 
     startsnap.close();
 
     std::cout << "Saving initial genotype counts ... " << std::endl;
@@ -477,26 +374,29 @@ int main(int argc, char *argv[])
         }
         
         // Now go through each cell for mutation
-        for (auto& cell : Cell_temp)
+        if (generationNumber >= equilibrationGens)
         {
-            if (cell.mrate() * cell.genome_size() > randomNumber())
+            for (auto& cell : Cell_temp)
             {
-                mutationCount++;
-                if (trackMutations)
+                if (cell.mrate() * cell.genome_size() > randomNumber())
                 {
-                    // mutate and write mutation to file
-                    cell.ranmut_Gene(MUTATIONLOG, generationNumber);
+                    mutationCount++;
+                    if (trackMutations)
+                    {
+                        // mutate and write mutation to file
+                        cell.ranmut_Gene(MUTATIONLOG, generationNumber);
+                    }
+                    else
+                    {
+                        cell.ranmut_Gene();
+                    }       
                 }
                 else
                 {
-                    cell.ranmut_Gene();
-                }       
-            }
-            else
-            {
-                // Even if we don't mutate, update the fitness.
-                // In stochastic gene expression, fitness will change.
-                cell.UpdateRates();
+                    // Even if we don't mutate, update the fitness.
+                    // In stochastic gene expression, fitness will change.
+                    cell.UpdateRates();
+                }
             }
         }
 
@@ -550,17 +450,6 @@ int main(int argc, char *argv[])
     MUTATIONLOG.close();
     std::cout << "Done." << std::endl;
     std::cout << "Total number of mutation events: " << mutationCount << std::endl;
-
-    // if the user toggled analysis, call shell script
-    if (enableAnalysis)
-    {
-        std::string script = "/path/to/barcodes.sh";
-        std::string command = script+" "+outDir+" "+std::to_string(generationMax)+" "+std::to_string(populationSize)+" "+std::to_string(DT)+" "+std::to_string((int) useShort);
-        std::cout << "Call analysis using the following command:" << std::endl;
-        std::cout << command << std::endl;
-        // const char *cmd = command.c_str();
-        // system(cmd);
-    }
 
     gsl_rng_free(r_gsl);
     return 0;

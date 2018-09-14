@@ -131,7 +131,7 @@ Cell::Cell(std::fstream& IN, const std::string& genesPath)
         // G.ch_f(f);
         // G.Update_Sequences(DNAsequence);
         // G.ch_Na(Na);
-        // G.ch_Ns(Ns); 
+        // G.ch_Ns(Ns);
         Gene_arr_.push_back(G);
     }
 }
