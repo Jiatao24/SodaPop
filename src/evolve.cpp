@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
     try
     { 
         // Define the command line object
-        TCLAP::CmdLine cmd("SodaPop: a multi-scale model of molecular evolution", ' ', "v1.0");
+        TCLAP::CmdLine cmd("SodaPop: a multi-scale model of molecular evolution", ' ', "SodaPop/0.1.3b-biophysical");
 
         // Define value arguments
         TCLAP::ValueArg<int> maxArg("m","maxgen","Maximum number of generations",false,10000,"int");
@@ -374,29 +374,27 @@ int main(int argc, char *argv[])
         }
         
         // Now go through each cell for mutation
-        if (generationNumber >= equilibrationGens)
+        for (auto& cell : Cell_temp)
         {
-            for (auto& cell : Cell_temp)
+            if ((generationNumber >= equilibrationGens)
+                && cell.mrate() * cell.genome_size() > randomNumber())
             {
-                if (cell.mrate() * cell.genome_size() > randomNumber())
+                mutationCount++;
+                if (trackMutations)
                 {
-                    mutationCount++;
-                    if (trackMutations)
-                    {
-                        // mutate and write mutation to file
-                        cell.ranmut_Gene(MUTATIONLOG, generationNumber);
-                    }
-                    else
-                    {
-                        cell.ranmut_Gene();
-                    }       
+                    // mutate and write mutation to file
+                    cell.ranmut_Gene(MUTATIONLOG, generationNumber);
                 }
                 else
                 {
-                    // Even if we don't mutate, update the fitness.
-                    // In stochastic gene expression, fitness will change.
-                    cell.UpdateRates();
+                    cell.ranmut_Gene();
                 }
+            }
+            else
+            {
+                // Even if we don't mutate, update the fitness.
+                // In stochastic gene expression, fitness will change.
+                cell.UpdateRates();
             }
         }
 
