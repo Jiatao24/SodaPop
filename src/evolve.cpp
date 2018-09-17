@@ -158,13 +158,16 @@ int main(int argc, char *argv[])
     int generationMax = generationNumber + 1;
     int mutationCount = 0;
     int equilibrationGens = 0;
-    double populationSize=1;
+    int populationSize = 1;
     int DT = 1;
     int snapDT = 0;
     double TIME = 0;            // This is never updated?
     char buffer[200];
     bool trackMutations = false;
     bool rampingDrug = false;
+    bool bottleneck = false;
+    unsigned int bottleneckSize = 1;
+    unsigned int bottleneckInterval = 1;
 
     std::string geneListFile, genesPath;
     std::string outDir, startSnapFile, matrixFile;
@@ -213,7 +216,11 @@ int main(int argc, char *argv[])
 
         TCLAP::SwitchArg rampingArg("", "ramping", "Drug concentration adjusts to population fitness.", cmd, false);
 
-        TCLAP::ValueArg<int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");        
+        TCLAP::ValueArg<int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");
+
+        TCLAP::ValueArg<unsigned int> bottleneckSizeArg("", "bottleneck-size", "how much to reduce population", false, 0, "positive int");
+
+        TCLAP::ValueArg<unsigned int> bottleneckIntervalArg("", "bottleneck-interval", "how often to reduce population", false, 0, "positive int");
 
         // Add the arguments to the CmdLine object.
         cmd.add(seedArg);
@@ -230,6 +237,8 @@ int main(int argc, char *argv[])
         cmd.add(xfactorArg);
         cmd.add(concentrationArg);
         cmd.add(equilArg);
+        cmd.add(bottleneckSizeArg);
+        cmd.add(bottleneckIntervalArg);
 
         // Parse the argv array.
         cmd.parse(argc, argv);
@@ -278,6 +287,34 @@ int main(int argc, char *argv[])
             {
                 std::cerr << "error: --concentration argument < 0 ("
                           << DRUG_CONCENTRATION << ")\n";
+                exit(1);
+            }
+        }
+
+        if (bottleneckSizeArg.isSet() || bottleneckIntervalArg.isSet())
+        {
+            if (!(bottleneckSizeArg.isSet() && bottleneckIntervalArg.isSet()))
+            {
+                std::cerr << "error: if one of --bottleneck-size, "
+                          << "--bottleneck-interval is set, then both "
+                          << "must be set\n.";
+                exit(1);
+            }
+
+            bottleneck = true;
+            bottleneckSize = bottleneckSizeArg.getValue();
+            bottleneckInterval = bottleneckIntervalArg.getValue();
+
+            if (bottleneckSize < 1)
+            {
+                std::cerr << "error: --bottleneck-size < 1 ("
+                          << bottleneckSize << ")\n";
+                exit(1);
+            }
+            if (bottleneckInterval < 1)
+            {
+                std::cerr << "error: --bottleneck-interval < 1 ("
+                          << bottleneckInterval << ")\n";
                 exit(1);
             }
         }
@@ -363,6 +400,18 @@ int main(int argc, char *argv[])
         for (auto cell_it = Cell_arr.begin(); cell_it != Cell_arr.end();
              ++cell_it, ++fitnesses_it)
             *fitnesses_it = cell_it->fitness();
+
+        if (bottleneck && (generationNumber % bottleneckInterval == 0))
+        {
+            double dieProbability = 1 - bottleneckSize / (double)populationSize;
+            for (auto& fitness : fitnesses)
+            {
+                if (randomNumber() < dieProbability)
+                {
+                    fitness = 0;
+                }
+            }
+        }
 
         // Number of progeny per cell determined via sample from
         // multinomial distribution.
