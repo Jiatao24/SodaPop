@@ -160,6 +160,7 @@ int main(int argc, char *argv[])
     int equilibrationGens = 0;
     double populationSize=1;
     int DT = 1;
+    int snapDT = 0;
     double TIME = 0;            // This is never updated?
     char buffer[200];
     bool trackMutations = false;
@@ -180,12 +181,13 @@ int main(int argc, char *argv[])
         // Define value arguments
         TCLAP::ValueArg<int> maxArg("m","maxgen","Maximum number of generations",false,10000,"int");
         TCLAP::ValueArg<int> popArg("n","size","Initial population size",false,1,"int");
-        TCLAP::ValueArg<int> dtArg("t","dt","Time interval for snapshots",false,1,"int");
+        TCLAP::ValueArg<int> dtArg("t","dt","Time interval for json snapshots",false,1,"int");
+        TCLAP::ValueArg<int> fulldtArg("","fullsnap-dt","Time interval for full snapshots",false,0,"int");
 
         //files
         TCLAP::ValueArg<std::string> prefixArg("o","prefix","Prefix to be used for snapshot files",false,"sim","filename");
         TCLAP::ValueArg<std::string> geneArg("g","gene-list","Gene list file",true,"null","filename");
-        TCLAP::ValueArg<std::string> startArg("p","pop-desc","Population description file",false,"null","filename");
+        TCLAP::ValueArg<std::string> startArg("p","pop-desc","Population description file",true,"null","filename");
         TCLAP::ValueArg<std::string> libArg("l","gene-lib","Gene library directory",false,"files/genes/","filename");
 
         // fitness function
@@ -219,6 +221,7 @@ int main(int argc, char *argv[])
         cmd.add(maxArg);
         cmd.add(popArg);
         cmd.add(dtArg);
+        cmd.add(fulldtArg);
         cmd.add(prefixArg);
         cmd.add(geneArg);
         cmd.add(startArg);
@@ -235,6 +238,7 @@ int main(int argc, char *argv[])
         generationMax = maxArg.getValue();
         populationSize = popArg.getValue();
         DT = dtArg.getValue();
+        snapDT = fulldtArg.getValue();
 
         geneListFile = geneArg.getValue();
         outDir = prefixArg.getValue();
@@ -420,6 +424,33 @@ int main(int argc, char *argv[])
 
              saveSnapshot(buffer, Cell_arr, generationNumber);
              std::cout << "Generation: " << generationNumber << std::endl;
+        }
+
+        // sometimes, we save a full dump of population
+        if ((snapDT > 0) && ((generationNumber % snapDT) == 0))
+        {
+             sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
+                     outDir.c_str(), generationNumber); 
+
+             std::fstream OUT2(buffer, std::ios::out | std::ios::binary);
+             if (!OUT2.is_open())
+             {
+                 std::cerr << "Snapshot file could not be opened";
+                 exit(1);
+             }
+      
+             double frame_time = generationNumber;
+             OUT2.write((char*)(&frame_time),sizeof(double));
+             OUT2.write((char*)(&TIME),sizeof(double));
+             OUT2.write((char*)(&Total_Cell_Count),sizeof(int));
+
+             int l = 1;
+             for (auto k = Cell_arr.begin(); k != Cell_arr.end(); ++k)
+             {
+                 k->dump(OUT2, l);
+                 l++;
+             }
+             OUT2.close();
         }
 
         if (rampingDrug)
