@@ -2,8 +2,6 @@
 
 #include <tclap/CmdLine.h>
 
-#include <gsl/gsl_randist.h>
-
 #include "nlohmann/json.hpp"
 
 #include "rng.h"
@@ -27,7 +25,7 @@ Copyright (C) 2017 Louis Gauthier
     You should have received a copy of the GNU General Public License
     along with SodaPop.  If not, see <http://www.gnu.org/licenses/>.
 
-git branch tmp_resistance
+git branch moran_model
  */
 
 using json = nlohmann::json;
@@ -346,15 +344,11 @@ int main(int argc, char *argv[])
     std::cout << "Creating directory " << outPath << " ... "
               << (makePath(outPath) ? "OK" : "failed") << std::endl;
 
-    std::vector<PolyCell> Cell_arr;
-    std::vector<double> fitnesses(populationSize, 0.);
-    // double w_sum = 0;
-
     // CREATE VECTOR WITH populationSize CELLS
     std::cout << "Creating a population of " << populationSize << " cells ..."
               << std::endl;
     PolyCell A(startsnap, genesPath);
-    Cell_arr = std::vector<PolyCell>(populationSize, A);
+    std::vector<PolyCell> Cell_arr(populationSize, A);
     for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
     {
         it->ch_barcode(getBarcode());
@@ -384,34 +378,33 @@ int main(int argc, char *argv[])
     
     std::cout << "Starting evolution ..." << std::endl;
 
-    // Setup GSL-style RNG for multinomial.
-    gsl_rng *r_gsl;
-    r_gsl = gsl_rng_alloc(&gsl_rng_pcg);
-
-    // WRIGHT-FISHER PROCESS
+    // MORAN PROCESS
     while (generationNumber < generationMax)
     {
         // Vector to hold the next generation
         std::vector<PolyCell> Cell_temp;
         std::vector<unsigned int> progeny_per_cell(populationSize, 0);
+        std::vector<double> cumulativeFitnesses(populationSize, Cell_arr.begin()->fitness());
 
         // Iterate through cells and gather fitnesses into vector.
-        auto fitnesses_it = fitnesses.begin();
-        for (auto cell_it = Cell_arr.begin(); cell_it != Cell_arr.end();
-             ++cell_it, ++fitnesses_it)
-            *fitnesses_it = cell_it->fitness();
-
-        if (bottleneck && (generationNumber % bottleneckInterval == 0))
+        for (int i = 1; i < Cell_arr.size(); ++i)
         {
-            double dieProbability = 1 - bottleneckSize / (double)populationSize;
-            for (auto& fitness : fitnesses)
-            {
-                if (randomNumber() < dieProbability)
-                {
-                    fitness = 0;
-                }
-            }
+            cumulativeFitnesses[i] = cumulativeFitnesses[i - 1] + Cell_arr[i].fitness();
         }
+
+        double totalFitness = cumulativeFitnesses[-1];
+
+        // if (bottleneck && (generationNumber % bottleneckInterval == 0))
+        // {
+        //     double dieProbability = 1 - bottleneckSize / (double)populationSize;
+        //     for (auto& fitness : fitnesses)
+        //     {
+        //         if (randomNumber() < dieProbability)
+        //         {
+        //             fitness = 0;
+        //         }
+        //     }
+        // }
 
         // Number of progeny per cell determined via sample from
         // multinomial distribution.
