@@ -33,7 +33,7 @@ public:
     int total_mutations(const int&);
     void init_gene_stochastic_concentrations();
 
-    virtual void UpdateRates() = 0;
+    virtual void UpdateRates(double dt) = 0;
     virtual void dump(std::fstream&, int) = 0;
     virtual void PrintCell(int) = 0;       
              

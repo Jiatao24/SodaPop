@@ -96,7 +96,7 @@ public:
     //! Draw new protein concentration value from gamma distribution
     double update_stochastic_conc_gamma();
     //! Update protein concentration value via Ornstein-Uhlenbeck process
-    double update_stochastic_conc_OU();
+    double update_stochastic_conc_OU(double dt);
 
     double e() const {return e_;}
 

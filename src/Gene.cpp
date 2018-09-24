@@ -553,12 +553,12 @@ double Gene::update_stochastic_conc_gamma()
 
 
 //
-double Gene::update_stochastic_conc_OU()
+double Gene::update_stochastic_conc_OU(double dt)
 {
     // std::cout << "stochastic conc: " << stochastic_conc_;
     stochastic_conc_ = conc_
-        + (stochastic_conc_ - conc_)*exp(-1/OU_tau_)
-        + (sqrt((OU_diffusion_ * OU_tau_ / 2)*(1-exp(-2/OU_tau_)))
+        + (stochastic_conc_ - conc_)*exp(-1*dt/OU_tau_)
+        + (sqrt((OU_diffusion_ * OU_tau_ / 2)*(1-exp(-2*dt/OU_tau_)))
            * Gene::normal_(g_rng,
                            std::normal_distribution<double>::param_type(0, 1)));
     // std::cout << "; new conc: " << stochastic_conc_ << std::endl;

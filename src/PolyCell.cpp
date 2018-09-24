@@ -20,7 +20,7 @@ PolyCell::PolyCell(std::fstream& f) : Cell(f)
 {
     selectFitness();
     // Update current rates
-    UpdateRates();  
+    UpdateRates(0);  
     // Fill gene length array
     FillGene_L();
 }    
@@ -30,7 +30,7 @@ PolyCell::PolyCell(std::fstream& f, const std::string& s) : Cell(f, s)
 {
     selectFitness();
     // Update current rates
-    UpdateRates();  
+    UpdateRates(0);  
     // Fill gene length array
     FillGene_L();
 }
@@ -38,18 +38,18 @@ PolyCell::PolyCell(std::fstream& f, const std::string& s) : Cell(f, s)
 void PolyCell::selectFitness()
 {
     switch(PolyCell::ff_){
-    case 1: fit = &PolyCell::flux;
-        break;
-    case 2: fit = &PolyCell::toxicity;
-        break;
-    case 3: fit = &PolyCell::metabolicOutput;
-        break;
-    case 4: fit = &PolyCell::multiplicative;
-        break;
-    case 5: fit = &PolyCell::neutral;
-        break;
-    case 6: fit = &PolyCell::stochasticExpression;
-        break;
+    // case 1: fit = &PolyCell::flux;
+    //     break;
+    // case 2: fit = &PolyCell::toxicity;
+    //     break;
+    // case 3: fit = &PolyCell::metabolicOutput;
+    //     break;
+    // case 4: fit = &PolyCell::multiplicative;
+    //     break;
+    // case 5: fit = &PolyCell::neutral;
+    //     break;
+    // case 6: fit = &PolyCell::stochasticExpression;
+    //     break;
     case 7: fit = &PolyCell::enzymaticOutput;
         break;
     case 8: fit = &PolyCell::stochasticEnzymaticOutput;
@@ -59,92 +59,92 @@ void PolyCell::selectFitness()
     }
 }
 
-// FLUX FITNESS FUNCTION
-double PolyCell::flux()
-{
-    double f = 0;
-    //sum (concentration*Pnat) over all genes
-    for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
-    {
-        f += 1 / (i->functional());
-    }
-    return exp(A_FACTOR / f - 1);
-}
+// // FLUX FITNESS FUNCTION
+// double PolyCell::flux()
+// {
+//     double f = 0;
+//     //sum (concentration*Pnat) over all genes
+//     for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
+//     {
+//         f += 1 / (i->functional());
+//     }
+//     return exp(A_FACTOR / f - 1);
+// }
 
-// TOXICITY FITNESS FUNCTION
-double PolyCell::toxicity()
-{
-    double f = 0;
-    //sum (concentration*(1-Pnat)) over all genes
-    for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
-    {
-        f +=i->misfolded();
-    }
-    double w = exp(-(COST*f));
-    return w;
-}
+// // TOXICITY FITNESS FUNCTION
+// double PolyCell::toxicity()
+// {
+//     double f = 0;
+//     //sum (concentration*(1-Pnat)) over all genes
+//     for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
+//     {
+//         f +=i->misfolded();
+//     }
+//     double w = exp(-(COST*f));
+//     return w;
+// }
 
-// METABOLIC FLUX FITNESS FUNCTION
-// FLUX AND TOXICITY COMBINED
-double PolyCell::metabolicOutput()
-{
-    double flux = 0;
-    double toxicity = 0;
-    for (auto& it : Gene_arr_) {
-        flux += 1 / it.functional();
-        toxicity += it.misfolded();
-    }
+// // METABOLIC FLUX FITNESS FUNCTION
+// // FLUX AND TOXICITY COMBINED
+// double PolyCell::metabolicOutput()
+// {
+//     double flux = 0;
+//     double toxicity = 0;
+//     for (auto& it : Gene_arr_) {
+//         flux += 1 / it.functional();
+//         toxicity += it.misfolded();
+//     }
 
-    flux = A_FACTOR / flux;
-    toxicity = COST * toxicity;
+//     flux = A_FACTOR / flux;
+//     toxicity = COST * toxicity;
 
-    double fitness = flux - toxicity;
-    return (fitness < 0) ? 0 : fitness;
-}
+//     double fitness = flux - toxicity;
+//     return (fitness < 0) ? 0 : fitness;
+// }
 
-// MULTIPLICATIVE FITNESS FUNCTION
-double PolyCell::multiplicative()
-{
-    double fitness = 1;
-    for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
-    {
-        fitness *= i->f();
-        if (fitness < 0)
-            return 0;
-    }
-    return fitness;
-}
+// // MULTIPLICATIVE FITNESS FUNCTION
+// double PolyCell::multiplicative()
+// {
+//     double fitness = 1;
+//     for (auto i = Gene_arr_.begin(); i != Gene_arr_.end(); ++i)
+//     {
+//         fitness *= i->f();
+//         if (fitness < 0)
+//             return 0;
+//     }
+//     return fitness;
+// }
 
-// NEUTRAL FITNESS FUNCTION
-double PolyCell::neutral()
-{
-    return 1;
-}
+// // NEUTRAL FITNESS FUNCTION
+// double PolyCell::neutral()
+// {
+//     return 1;
+// }
 
-// STOCHASTIC PROTEIN EXPRESSION (ALSO BASED ON FLUX)
-// it's basically metabolicOutput with stochastic concentration
-double PolyCell::stochasticExpression()
-{
-    double flux = 0;
-    double toxicity = 0;
-    for (auto& it : Gene_arr_)
-    {
-        it.update_stochastic_conc_gamma();
-        if (it.stochastic_conc() == 0)
-        {
-	    // Fatal to not express any protein
-            return 0;
-        }
-        flux += 1 / it.functional(true);
-        toxicity += it.misfolded(true);
-    }
+// // STOCHASTIC PROTEIN EXPRESSION (ALSO BASED ON FLUX)
+// // it's basically metabolicOutput with stochastic concentration
+// double PolyCell::stochasticExpression()
+// {
+//     double flux = 0;
+//     double toxicity = 0;
+//     for (auto& it : Gene_arr_)
+//     {
+//         it.update_stochastic_conc_gamma();
+//         if (it.stochastic_conc() == 0)
+//         {
+// 	    // Fatal to not express any protein
+//             return 0;
+//         }
+//         flux += 1 / it.functional(true);
+//         toxicity += it.misfolded(true);
+//     }
 
-    flux = A_FACTOR / flux;
-    toxicity = COST * toxicity;
+//     flux = A_FACTOR / flux;
+//     toxicity = COST * toxicity;
     
-    double fitness = flux - toxicity;
-    return (fitness < 0) ? 0 : fitness;
-}
+//     double fitness = flux - toxicity;
+//     return (fitness < 0) ? 0 : fitness;
+// }
 
 // ENZYMATIC OUTPUT (ALSO BASED ON FLUX)
 // (Presumes that there is only a single gene)
@@ -161,7 +161,6 @@ double PolyCell::enzymaticOutput()
 double PolyCell::stochasticEnzymaticOutput()
 {
     auto& first_gene = Gene_arr_.front();
-    first_gene.update_stochastic_conc_OU();
     double fitness = first_gene.enzymaticFlux(true)
         / (X_FACTOR + first_gene.enzymaticFlux(true));
     return fitness;
@@ -172,8 +171,12 @@ double PolyCell::fitness()
     return fitness_;
 }
 
-void PolyCell::UpdateRates()
+void PolyCell::UpdateRates(double dt)
 {
+    for (auto &gene : Gene_arr_)
+    {
+        gene.update_stochastic_conc_OU(dt);
+    }
     fitness_ = (this->*fit)();
 }
 
@@ -208,7 +211,6 @@ void PolyCell::ranmut_Gene(std::ofstream& log, int ctr)
 
     mutation = j->mutate(site, bp);
 
-    UpdateRates();
     double wf = fitness();
     double s = wf - wi;
 
@@ -254,7 +256,6 @@ void PolyCell::ranmut_Gene()
     int bp = (int) (3 * randomNumber());
     j->mutate(site, bp);
 
-    UpdateRates();
 }
 
 // Dump cell information to binary file

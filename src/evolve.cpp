@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <cmath>
 
 #include <tclap/CmdLine.h>
 
@@ -157,8 +158,8 @@ int main(int argc, char *argv[])
     int mutationCount = 0;
     int equilibrationGens = 0;
     int populationSize = 1;
-    int DT = 1;
-    int snapDT = 0;
+    int outputFreq = 1;
+    int snapoutputFreq = 0;
     double TIME = 0;            // This is never updated?
     char buffer[200];
     bool trackMutations = false;
@@ -244,8 +245,8 @@ int main(int argc, char *argv[])
         // Get values from args. 
         generationMax = maxArg.getValue();
         populationSize = popArg.getValue();
-        DT = dtArg.getValue();
-        snapDT = fulldtArg.getValue();
+        outputFreq = dtArg.getValue();
+        snapoutputFreq = fulldtArg.getValue();
 
         geneListFile = geneArg.getValue();
         outDir = prefixArg.getValue();
@@ -353,7 +354,7 @@ int main(int argc, char *argv[])
     {
         it->ch_barcode(getBarcode());
         it->init_gene_stochastic_concentrations();
-        it->UpdateRates();
+        it->UpdateRates(0);
     } 
     startsnap.close();
 
@@ -384,51 +385,52 @@ int main(int argc, char *argv[])
         // Vector to hold the next generation
         std::vector<PolyCell> Cell_temp;
         std::vector<unsigned int> progeny_per_cell(populationSize, 0);
-        std::vector<double> cumulativeFitnesses(populationSize, Cell_arr.begin()->fitness());
+        std::vector<double> cumulativeProbability(
+            populationSize + 1, Cell_arr.begin()->fitness());
 
         // Iterate through cells and gather fitnesses into vector.
         for (int i = 1; i < Cell_arr.size(); ++i)
         {
-            cumulativeFitnesses[i] = cumulativeFitnesses[i - 1] + Cell_arr[i].fitness();
+            cumulativeProbability[i] = cumulativeProbability[i - 1]
+                + Cell_arr[i].fitness();
         }
 
-        double totalFitness = cumulativeFitnesses[-1];
+        // Put in probability for death event
+        // 0.5 * Cell_arr.size() is such that average fitness of
+        // 0.5 results in constant population.
+        cumulativeProbability.back() =
+            *(cumulativeProbability.rbegin() + 1)
+            + 0.5 * Cell_arr.size();
 
-        // if (bottleneck && (generationNumber % bottleneckInterval == 0))
-        // {
-        //     double dieProbability = 1 - bottleneckSize / (double)populationSize;
-        //     for (auto& fitness : fitnesses)
-        //     {
-        //         if (randomNumber() < dieProbability)
-        //         {
-        //             fitness = 0;
-        //         }
-        //     }
-        // }
+        double totalProbability = cumulativeProbability[-1];
 
-        // Number of progeny per cell determined via sample from
-        // multinomial distribution.
-        gsl_ran_multinomial(r_gsl, populationSize, populationSize,
-                            fitnesses.data(), progeny_per_cell.data());
+        double dt = (-1 / totalProbability) * log(randomNumber());
+        TIME += dt;
 
-        // Iterate through cells and number of progeny, filling Cell_temp.
-        auto cell_it = Cell_arr.begin();
-        for (auto& progeny : progeny_per_cell)
+        double rate = totalProbability * randomNumber();
+
+        int cellIndex;
+        for (cellIndex = 0; cellIndex < cumulativeProbability.size(); ++cellIndex)
         {
-            std::fill_n(std::back_inserter(Cell_temp), progeny, (*cell_it));
-            cell_it++;
+            if (rate < cumulativeProbability[cellIndex])
+            {
+                break;
+            }
         }
-        
-        // Now go through each cell for mutation
-        for (auto& cell : Cell_temp)
+
+        if (cellIndex < Cell_arr.size())
         {
+            // reproduction event
+            Cell_arr.push_back(Cell_arr[cellIndex]);
+            // Potentially mutate
+            PolyCell &cell = Cell_arr.back();
+            // Admittedly a rough proxy for mutation
             if ((generationNumber >= equilibrationGens)
-                && cell.mrate() * cell.genome_size() > randomNumber())
+                && (cell.mrate() * cell.genome_size() > randomNumber()))
             {
                 mutationCount++;
                 if (trackMutations)
                 {
-                    // mutate and write mutation to file
                     cell.ranmut_Gene(MUTATIONLOG, generationNumber);
                 }
                 else
@@ -436,30 +438,35 @@ int main(int argc, char *argv[])
                     cell.ranmut_Gene();
                 }
             }
-            else
-            {
-                // Even if we don't mutate, update the fitness.
-                // In stochastic gene expression, fitness will change.
-                cell.UpdateRates();
-            }
         }
-
-        Total_Cell_Count = (int)(Cell_temp.size());
-        assert (Total_Cell_Count == populationSize);
-        // swap population with initial vector
-        Cell_arr.swap(Cell_temp);
-
-        // update Ns and Na for each cell
-        for (auto it = Cell_arr.begin(); it != Cell_arr.end(); ++it)
+        else
         {
-            it->UpdateNsNa();
+            // death event
+            cellIndex = (int)(randomNumber() * Cell_arr.size());
+            Cell_arr.erase(Cell_arr.begin() + cellIndex);
         }
-        
+
+        // Keep population under max limit
+        while (Cell_arr.size() > populationSize)
+        {
+            cellIndex = (int)(randomNumber() * Cell_arr.size());
+            Cell_arr.erase(Cell_arr.begin() + cellIndex);
+        }
+
+        // Still need to update rates
+        for (auto &cell : Cell_arr)
+        {
+            cell.UpdateRates(dt);
+        }
+
         // update generation counter
-        generationNumber++; 
+        if (TIME - 1 > generationNumber)
+        {
+            ++generationNumber;
+        }
      
-        // save population snapshot every DT generations
-        if ((generationNumber % DT) == 0)
+        // save population snapshot every outputFreq generations
+        if ((generationNumber % outputFreq) == 0)
         {
              sprintf(buffer, "%s/%s.gen%010d.json", outPath.c_str(),
                      outDir.c_str(), generationNumber); 
@@ -469,7 +476,7 @@ int main(int argc, char *argv[])
         }
 
         // sometimes, we save a full dump of population
-        if ((snapDT > 0) && ((generationNumber % snapDT) == 0))
+        if ((snapoutputFreq > 0) && ((generationNumber % snapoutputFreq) == 0))
         {
              sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
                      outDir.c_str(), generationNumber); 
@@ -499,11 +506,11 @@ int main(int argc, char *argv[])
         {
             // Calculate a fitness average
             double fitnessTotal(0);
-            for (auto& fitness : fitnesses)
+            for (auto& cell : Cell_arr)
             {
-                fitnessTotal += fitness;
+                fitnessTotal += cell.fitness();
             }
-            double fitnessAverage = fitnessTotal / (double)fitnesses.size();
+            double fitnessAverage = fitnessTotal / (double)Cell_arr.size();
 
             if (fitnessAverage > 0.5)
             {
@@ -522,6 +529,5 @@ int main(int argc, char *argv[])
     std::cout << "Done." << std::endl;
     std::cout << "Total number of mutation events: " << mutationCount << std::endl;
 
-    gsl_rng_free(r_gsl);
     return 0;
 }

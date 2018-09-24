@@ -36,16 +36,16 @@ public:
 
     // Fitness functions
     void selectFitness();
-    double flux();
-    double toxicity();
-    double metabolicOutput();
-    double multiplicative();
-    double neutral();
-    double stochasticExpression();
+    // double flux();
+    // double toxicity();
+    // double metabolicOutput();
+    // double multiplicative();
+    // double neutral();
+    // double stochasticExpression();
     double enzymaticOutput();
     double stochasticEnzymaticOutput();
     double fitness();           //!< Getter for fitness_
-    void UpdateRates();		//!< This function updates fitness_.
+    void UpdateRates(double dt);//!< This function updates fitness_.
 
     void ranmut_Gene();
     void ranmut_Gene(std::ofstream&, int);
