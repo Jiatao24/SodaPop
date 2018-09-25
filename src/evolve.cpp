@@ -382,9 +382,6 @@ int main(int argc, char *argv[])
     // MORAN PROCESS
     while (generationNumber < generationMax)
     {
-        // Vector to hold the next generation
-        std::vector<PolyCell> Cell_temp;
-        std::vector<unsigned int> progeny_per_cell(populationSize, 0);
         std::vector<double> cumulativeProbability(
             populationSize + 1, Cell_arr.begin()->fitness());
 
@@ -398,6 +395,7 @@ int main(int argc, char *argv[])
         // Put in probability for death event
         // 0.5 * Cell_arr.size() is such that average fitness of
         // 0.5 results in constant population.
+        // This perhaps should be a parameter.
         cumulativeProbability.back() =
             *(cumulativeProbability.rbegin() + 1)
             + 0.5 * Cell_arr.size();
@@ -500,6 +498,13 @@ int main(int argc, char *argv[])
                  l++;
              }
              OUT2.close();
+        }
+
+        if (cell_Arr.size() == 0)
+        {
+            // extinction!
+            std::cout << "Population down to 0. "<< std::endl;
+            break;
         }
 
         if (rampingDrug)
