@@ -51,7 +51,7 @@ void countGenotypes(std::vector<PolyCell> cells,
 }
 
 
-//! Save a more succint text-based snapshot of genotype populations.
+//! Save a more succint json-based snapshot of genotype populations.
 void saveSnapshot(char* buffer, std::vector<PolyCell>& cells,
                   int generationNumber)
 {
@@ -153,14 +153,15 @@ void saveSnapshot(char* buffer, std::vector<PolyCell>& cells,
 int main(int argc, char *argv[])
 {
     // these variables will hold the parameters input (or not) by the user
-    int generationNumber = 0;
-    int generationMax = generationNumber + 1;
-    int mutationCount = 0;
-    int equilibrationGens = 0;
-    int populationSize = 1;
-    int outputFreq = 1;
-    int snapoutputFreq = 0;
-    double TIME = 0;            // This is never updated?
+    unsigned int generationNumber = 0;
+    unsigned int generationMax = generationNumber + 1;
+    unsigned int mutationCount = 0;
+    unsigned int equilibrationGens = 0;
+    unsigned int populationSize = 1;
+    unsigned int populationMax = 1;
+    unsigned int outputFreq = 1;
+    unsigned int snapoutputFreq = 0;
+    double TIME = 0;
     char buffer[200];
     bool trackMutations = false;
     bool rampingDrug = false;
@@ -171,8 +172,6 @@ int main(int argc, char *argv[])
     std::string geneListFile, genesPath;
     std::string outDir, startSnapFile, matrixFile;
 
-    std::map<std::string, unsigned int> genotypeCounts;
-
     // Wrap everything in a try block
     // errors in input are caught and explained to user
     try
@@ -181,10 +180,11 @@ int main(int argc, char *argv[])
         TCLAP::CmdLine cmd("SodaPop: a multi-scale model of molecular evolution", ' ', "SodaPop/0.1.3b-biophysical");
 
         // Define value arguments
-        TCLAP::ValueArg<int> maxArg("m","maxgen","Maximum number of generations",false,10000,"int");
-        TCLAP::ValueArg<int> popArg("n","size","Initial population size",false,1,"int");
-        TCLAP::ValueArg<int> dtArg("t","dt","Time interval for json snapshots",false,1,"int");
-        TCLAP::ValueArg<int> fulldtArg("","fullsnap-dt","Time interval for full snapshots",false,0,"int");
+        TCLAP::ValueArg<unsigned int> maxArg("m","maxgen","Maximum number of generations",false,10000,"int");
+        TCLAP::ValueArg<unsigned int> popArg("n","size","Initial population size",false,1,"positive int");
+        TCLAP::ValueArg<unsigned int> popMaxArg("", "max-size","Maximum population size",false,1,"int");
+        TCLAP::ValueArg<unsigned int> dtArg("t","dt","Time interval for json snapshots",false,1,"int");
+        TCLAP::ValueArg<unsigned int> fulldtArg("","fullsnap-dt","Time interval for full snapshots",false,0,"int");
 
         //files
         TCLAP::ValueArg<std::string> prefixArg("o","prefix","Prefix to be used for snapshot files",false,"sim","filename");
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 
         TCLAP::SwitchArg rampingArg("", "ramping", "Drug concentration adjusts to population fitness.", cmd, false);
 
-        TCLAP::ValueArg<int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");
+        TCLAP::ValueArg<unsigned int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");
 
         TCLAP::ValueArg<unsigned int> bottleneckSizeArg("", "bottleneck-size", "how much to reduce population", false, 0, "positive int");
 
@@ -226,6 +226,7 @@ int main(int argc, char *argv[])
         cmd.add(streamArg);
         cmd.add(maxArg);
         cmd.add(popArg);
+        cmd.add(popMaxArg);
         cmd.add(dtArg);
         cmd.add(fulldtArg);
         cmd.add(prefixArg);
@@ -245,6 +246,7 @@ int main(int argc, char *argv[])
         // Get values from args. 
         generationMax = maxArg.getValue();
         populationSize = popArg.getValue();
+        populationMax = popMaxArg.getValue();
         outputFreq = dtArg.getValue();
         snapoutputFreq = fulldtArg.getValue();
 
@@ -385,8 +387,8 @@ int main(int argc, char *argv[])
         std::vector<double> cumulativeProbability(
             populationSize + 1, Cell_arr.begin()->fitness());
 
-        // Iterate through cells and gather fitnesses into vector.
-        for (int i = 1; i < Cell_arr.size(); ++i)
+        // Iterate through cells and gather cumulative fitnesses into vector.
+        for (unsigned int i = 1; i < Cell_arr.size(); ++i)
         {
             cumulativeProbability[i] = cumulativeProbability[i - 1]
                 + Cell_arr[i].fitness();
@@ -401,16 +403,14 @@ int main(int argc, char *argv[])
             + 0.5 * Cell_arr.size();
 
         double totalProbability = cumulativeProbability[-1];
-
         double dt = (-1 / totalProbability) * log(randomNumber());
         TIME += dt;
 
-        double rate = totalProbability * randomNumber();
-
-        int cellIndex;
+        double r2 = totalProbability * randomNumber();
+        unsigned int cellIndex;
         for (cellIndex = 0; cellIndex < cumulativeProbability.size(); ++cellIndex)
         {
-            if (rate < cumulativeProbability[cellIndex])
+            if (r2 < cumulativeProbability[cellIndex])
             {
                 break;
             }
@@ -420,20 +420,36 @@ int main(int argc, char *argv[])
         {
             // reproduction event
             Cell_arr.push_back(Cell_arr[cellIndex]);
-            // Potentially mutate
-            PolyCell &cell = Cell_arr.back();
-            // Admittedly a rough proxy for mutation
-            if ((generationNumber >= equilibrationGens)
-                && (cell.mrate() * cell.genome_size() > randomNumber()))
+            // Possibly mutate both daughter and "parent"
+            if (generationNumber >= equilibrationGens)
             {
-                mutationCount++;
-                if (trackMutations)
+                // Potentially mutate parent
+                PolyCell &cell1 = Cell_arr[cellIndex];
+                if (cell1.mrate() * cell1.genome_size() > randomNumber())
                 {
-                    cell.ranmut_Gene(MUTATIONLOG, generationNumber);
+                    mutationCount++;
+                    if (trackMutations)
+                    {
+                        cell1.ranmut_Gene(MUTATIONLOG, generationNumber);
+                    }
+                    else
+                    {
+                        cell1.ranmut_Gene();
+                    }
                 }
-                else
+                // Potentially mutate daughter
+                PolyCell &cell2 = Cell_arr.back();
+                if (cell2.mrate() * cell2.genome_size() > randomNumber())
                 {
-                    cell.ranmut_Gene();
+                    mutationCount++;
+                    if (trackMutations)
+                    {
+                        cell2.ranmut_Gene(MUTATIONLOG, generationNumber);
+                    }
+                    else
+                    {
+                        cell2.ranmut_Gene();
+                    }
                 }
             }
         }
@@ -445,7 +461,7 @@ int main(int argc, char *argv[])
         }
 
         // Keep population under max limit
-        while (Cell_arr.size() > populationSize)
+        while (Cell_arr.size() > populationMax)
         {
             cellIndex = (int)(randomNumber() * Cell_arr.size());
             Cell_arr.erase(Cell_arr.begin() + cellIndex);
@@ -500,7 +516,7 @@ int main(int argc, char *argv[])
              OUT2.close();
         }
 
-        if (cell_Arr.size() == 0)
+        if (Cell_arr.size() == 0)
         {
             // extinction!
             std::cout << "Population down to 0. "<< std::endl;
