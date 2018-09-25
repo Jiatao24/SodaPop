@@ -384,25 +384,18 @@ int main(int argc, char *argv[])
     // MORAN PROCESS
     while (generationNumber < generationMax)
     {
-        std::vector<double> cumulativeProbability(
-            populationSize + 1, Cell_arr.begin()->fitness());
+        std::vector<double> cumulativeProbability(Cell_arr.size() + 1);
+        // Probability for death event
+        cumulativeProbability[0] = 0.5 * Cell_arr.size();
 
         // Iterate through cells and gather cumulative fitnesses into vector.
-        for (unsigned int i = 1; i < Cell_arr.size(); ++i)
+        for (unsigned int i = 1; i < cumulativeProbability.size(); ++i)
         {
             cumulativeProbability[i] = cumulativeProbability[i - 1]
-                + Cell_arr[i].fitness();
+                + Cell_arr[i - 1].fitness();
         }
 
-        // Put in probability for death event
-        // 0.5 * Cell_arr.size() is such that average fitness of
-        // 0.5 results in constant population.
-        // This perhaps should be a parameter.
-        cumulativeProbability.back() =
-            *(cumulativeProbability.rbegin() + 1)
-            + 0.5 * Cell_arr.size();
-
-        double totalProbability = cumulativeProbability[-1];
+        double &totalProbability = cumulativeProbability.back();
         double dt = (-1 / totalProbability) * log(randomNumber());
         TIME += dt;
 
@@ -416,9 +409,10 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (cellIndex < Cell_arr.size())
+        if (cellIndex > 0)
         {
             // reproduction event
+            --cellIndex;
             Cell_arr.push_back(Cell_arr[cellIndex]);
             // Possibly mutate both daughter and "parent"
             if (generationNumber >= equilibrationGens)
@@ -477,44 +471,45 @@ int main(int argc, char *argv[])
         if (TIME - 1 > generationNumber)
         {
             ++generationNumber;
+
+            // save population snapshot every outputFreq generations
+            if ((generationNumber % outputFreq) == 0)
+            {
+                sprintf(buffer, "%s/%s.gen%010d.json", outPath.c_str(),
+                        outDir.c_str(), generationNumber); 
+
+                saveSnapshot(buffer, Cell_arr, generationNumber);
+                std::cout << "Generation: " << generationNumber << std::endl;
+            }
+
+            // sometimes, we save a full dump of population
+            if ((snapoutputFreq > 0) && ((generationNumber % snapoutputFreq) == 0))
+            {
+                sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
+                        outDir.c_str(), generationNumber); 
+
+                std::fstream OUT2(buffer, std::ios::out | std::ios::binary);
+                if (!OUT2.is_open())
+                {
+                    std::cerr << "Snapshot file could not be opened";
+                    exit(1);
+                }
+      
+                double frame_time = generationNumber;
+                OUT2.write((char*)(&frame_time),sizeof(double));
+                OUT2.write((char*)(&TIME),sizeof(double));
+                OUT2.write((char*)(&Total_Cell_Count),sizeof(int));
+
+                int l = 1;
+                for (auto k = Cell_arr.begin(); k != Cell_arr.end(); ++k)
+                {
+                    k->dump(OUT2, l);
+                    l++;
+                }
+                OUT2.close();
+            }
         }
      
-        // save population snapshot every outputFreq generations
-        if ((generationNumber % outputFreq) == 0)
-        {
-             sprintf(buffer, "%s/%s.gen%010d.json", outPath.c_str(),
-                     outDir.c_str(), generationNumber); 
-
-             saveSnapshot(buffer, Cell_arr, generationNumber);
-             std::cout << "Generation: " << generationNumber << std::endl;
-        }
-
-        // sometimes, we save a full dump of population
-        if ((snapoutputFreq > 0) && ((generationNumber % snapoutputFreq) == 0))
-        {
-             sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
-                     outDir.c_str(), generationNumber); 
-
-             std::fstream OUT2(buffer, std::ios::out | std::ios::binary);
-             if (!OUT2.is_open())
-             {
-                 std::cerr << "Snapshot file could not be opened";
-                 exit(1);
-             }
-      
-             double frame_time = generationNumber;
-             OUT2.write((char*)(&frame_time),sizeof(double));
-             OUT2.write((char*)(&TIME),sizeof(double));
-             OUT2.write((char*)(&Total_Cell_Count),sizeof(int));
-
-             int l = 1;
-             for (auto k = Cell_arr.begin(); k != Cell_arr.end(); ++k)
-             {
-                 k->dump(OUT2, l);
-                 l++;
-             }
-             OUT2.close();
-        }
 
         if (Cell_arr.size() == 0)
         {
