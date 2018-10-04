@@ -177,12 +177,13 @@ int main(int argc, char *argv[])
     try
     { 
         // Define the command line object
-        TCLAP::CmdLine cmd("SodaPop: a multi-scale model of molecular evolution", ' ', "SodaPop/0.1.3b-biophysical");
+        TCLAP::CmdLine cmd("SodaPop: a multi-scale model of molecular evolution", ' ', "SodaPop/0.1.4bc-gillespie");
 
         // Define value arguments
         TCLAP::ValueArg<unsigned int> maxArg("m","maxgen","Maximum number of generations",false,10000,"int");
-        TCLAP::ValueArg<unsigned int> popArg("n","size","Initial population size",false,1,"positive int");
-        TCLAP::ValueArg<unsigned int> popMaxArg("", "max-size","Maximum population size",false,1,"int");
+        TCLAP::ValueArg<unsigned int> popArg("n", "size", "Initial population size", false, 1, "positive int");
+        TCLAP::ValueArg<unsigned int> popMaxArg("", "max-size", "Maximum population size. Simulation will stop if reached.",
+                                                false, 100000, "int");
         TCLAP::ValueArg<unsigned int> dtArg("t","dt","Time interval for json snapshots",false,1,"int");
         TCLAP::ValueArg<unsigned int> fulldtArg("","fullsnap-dt","Time interval for full snapshots",false,0,"int");
 
@@ -381,7 +382,10 @@ int main(int argc, char *argv[])
     
     std::cout << "Starting evolution ..." << std::endl;
 
-    // MORAN PROCESS
+    int birthCount = 0;
+    int deathCount = 0;
+
+    // "MORAN" PROCESS
     while (generationNumber < generationMax)
     {
         std::vector<double> cumulativeProbability(Cell_arr.size() + 1);
@@ -414,6 +418,7 @@ int main(int argc, char *argv[])
             // reproduction event
             --cellIndex;
             Cell_arr.push_back(Cell_arr[cellIndex]);
+            birthCount++;
             // Possibly mutate both daughter and "parent"
             if (generationNumber >= equilibrationGens)
             {
@@ -450,13 +455,7 @@ int main(int argc, char *argv[])
         else
         {
             // death event
-            cellIndex = (int)(randomNumber() * Cell_arr.size());
-            Cell_arr.erase(Cell_arr.begin() + cellIndex);
-        }
-
-        // Keep population under max limit
-        while (Cell_arr.size() > populationMax)
-        {
+            deathCount++;
             cellIndex = (int)(randomNumber() * Cell_arr.size());
             Cell_arr.erase(Cell_arr.begin() + cellIndex);
         }
@@ -467,23 +466,46 @@ int main(int argc, char *argv[])
             cell.UpdateRates(dt);
         }
 
-        // update generation counter
-        if (TIME - 1 > generationNumber)
+        bool stopSim = false;
+        // Criteria for stopping simulation:
+        if (Cell_arr.size() == 0)
         {
+            // extinction!
+            std::cout << "Population down to 0." << std::endl;
+            stopSim = true;
+        }
+        if  (Cell_arr.size() == populationMax)
+        {
+            // population grew to max (likely escaped from antibiotic)
+            std::cout << "Population reached max (" << populationMax << ").\n";
+            stopSim = true;
+        }
+
+        // update generation counter
+        if (TIME - 1 > generationNumber || stopSim)
+        {
+            // Yeah we'll increment gen even if we're stopping because
+            // of growth/death criteria.
             ++generationNumber;
 
             // save population snapshot every outputFreq generations
-            if ((generationNumber % outputFreq) == 0)
+            if ((generationNumber % outputFreq) == 0 || stopSim)
             {
                 sprintf(buffer, "%s/%s.gen%010d.json", outPath.c_str(),
                         outDir.c_str(), generationNumber); 
 
                 saveSnapshot(buffer, Cell_arr, generationNumber);
-                std::cout << "Generation: " << generationNumber << std::endl;
+                std::cout << "Generation: " << generationNumber
+                          << "; " << birthCount << " births; "
+                          << deathCount << " deaths\n";
             }
 
+            birthCount = 0;
+            deathCount = 0;
+
             // sometimes, we save a full dump of population
-            if ((snapoutputFreq > 0) && ((generationNumber % snapoutputFreq) == 0))
+            if ((snapoutputFreq > 0)
+                && ((generationNumber % snapoutputFreq) == 0 || stopSim))
             {
                 sprintf(buffer, "%s/%s.gen%010d.snap", outPath.c_str(),
                         outDir.c_str(), generationNumber); 
@@ -508,16 +530,10 @@ int main(int argc, char *argv[])
                 }
                 OUT2.close();
             }
+            if (stopSim)
+                break;
         }
      
-
-        if (Cell_arr.size() == 0)
-        {
-            // extinction!
-            std::cout << "Population down to 0. "<< std::endl;
-            break;
-        }
-
         if (rampingDrug)
         {
             // Calculate a fitness average
