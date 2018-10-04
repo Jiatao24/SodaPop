@@ -210,6 +210,7 @@ void PolyCell::ranmut_Gene(std::ofstream& log, int ctr)
     double wi = fitness();
 
     mutation = j->mutate(site, bp);
+    UpdateRates(0);
 
     double wf = fitness();
     double s = wf - wi;
@@ -255,7 +256,7 @@ void PolyCell::ranmut_Gene()
 
     int bp = (int) (3 * randomNumber());
     j->mutate(site, bp);
-
+    UpdateRates(0);
 }
 
 // Dump cell information to binary file
