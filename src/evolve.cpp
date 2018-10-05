@@ -162,6 +162,7 @@ int main(int argc, char *argv[])
     unsigned int outputFreq = 1;
     unsigned int snapoutputFreq = 0;
     double TIME = 0;
+    double deathRate = 0.5;
     char buffer[200];
     bool trackMutations = false;
     bool rampingDrug = false;
@@ -214,6 +215,8 @@ int main(int argc, char *argv[])
 
         TCLAP::ValueArg<double> concentrationArg("", "concentration", "Amount of drug present (nM)", false, 0, "non-negative double");
 
+        TCLAP::ValueArg<double> deathRateArg("", "death-rate", "Rate at which individual cells die.", false, 0.5, "non-negative double");
+
         TCLAP::SwitchArg rampingArg("", "ramping", "Drug concentration adjusts to population fitness.", cmd, false);
 
         TCLAP::ValueArg<unsigned int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");
@@ -237,6 +240,7 @@ int main(int argc, char *argv[])
         cmd.add(fitArg);
         cmd.add(xfactorArg);
         cmd.add(concentrationArg);
+        cmd.add(deathRateArg);
         cmd.add(equilArg);
         cmd.add(bottleneckSizeArg);
         cmd.add(bottleneckIntervalArg);
@@ -257,6 +261,7 @@ int main(int argc, char *argv[])
         genesPath = libArg.getValue();
 
         equilibrationGens = equilArg.getValue();
+        deathRate = deathRateArg.getValue();
 
         if (seedArg.isSet())
             setRngSeed(seedArg.getValue());
@@ -390,7 +395,7 @@ int main(int argc, char *argv[])
     {
         std::vector<double> cumulativeProbability(Cell_arr.size() + 1);
         // Probability for death event
-        cumulativeProbability[0] = 0.5 * Cell_arr.size();
+        cumulativeProbability[0] = deathRate * Cell_arr.size();
 
         // Iterate through cells and gather cumulative fitnesses into vector.
         for (unsigned int i = 1; i < cumulativeProbability.size(); ++i)
