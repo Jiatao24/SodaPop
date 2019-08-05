@@ -18,7 +18,7 @@ Gene::Gene()
       la_ = 0;
       Na_ = 0;
       Ns_ = 0;
-      nucseq_ = ""; 
+      nucseq_ = "";
       dg_ = 1;
       f_ = 1;
       conc_ = 1;
@@ -38,11 +38,11 @@ Gene::Gene(std::fstream& gene_in)
         iss >> word;
         if (word == "Gene_NUM")
         {
-            iss >> word; 
+            iss >> word;
             g_num_ = atoi(word.c_str());
         }
         else if (word == "N_Seq")
-        { 
+        {
             iss >> nucseq_;
             ln_ = nucseq_.length();
             if ((ln_ % 3) != 0)
@@ -63,7 +63,7 @@ Gene::Gene(std::fstream& gene_in)
                         std::cerr << "ERROR: DNA sequence has STOP codons."
 				  <<std::endl;
                         exit(2);
-                    }           
+                    }
             }
         }
         else if (word == "E")
@@ -77,13 +77,13 @@ Gene::Gene(std::fstream& gene_in)
             conc_ = atof(word.c_str());
         }
         else if (word == "DG")
-        { 
+        {
             iss >> word;
       	    dg_ = atof(word.c_str());
             dg_ = exp(-dg_/kT);
         }
         else if (word == "F")
-        { 
+        {
             iss >> word;
             f_ = atof(word.c_str());
         }
@@ -144,7 +144,7 @@ Gene::Gene(std::fstream& gene_in)
 
 
 // Genes are equal if DNA sequence and concentration are equal.
-bool Gene::operator== (Gene& G) 
+bool Gene::operator== (Gene& G)
 {
     std::string temp = G.nseq();
     if ( (temp.compare(nucseq_) == 0) && (conc_ == G.conc_) )
@@ -155,7 +155,7 @@ bool Gene::operator== (Gene& G)
 
 // // assignment overloading
 // Gene& Gene::operator=(const Gene& A)
-// { 
+// {
 //     if (this != &A){
 //         this->g_num_ = A.g_num_;
 //         this->ln_ = A.ln_;
@@ -185,7 +185,7 @@ std::string Gene::mutate(int site, int bp)
 
     // Codon to be mutated indexing.
     int codon_index = (site % 3); // Position within the codon
-    int codon_start = site - codon_index; 
+    int codon_start = site - codon_index;
     int resi = codon_start / 3; // Residue index
 
     // Fetch current codon.
@@ -196,14 +196,14 @@ std::string Gene::mutate(int site, int bp)
 
     // Get mutated bp.
     std::string new_bp = AdjacentBP(codon_current.substr(codon_index, 1), bp);
-   
+
     // Mutate codon
     codon_new.replace(codon_index, 1, new_bp);
     // Check for stop codon
     codon_new = n3_to_n3(codon_new, codon_current, codon_index);
     // get new amino acid
     int aa_new = GetIndexFromCodon(codon_new);
-    
+
     std::string mutation;
 
     // Ignore mutations to and from CYSTEINE.
@@ -225,8 +225,8 @@ std::string Gene::mutate(int site, int bp)
     //     //REVERT TO WT
 
     //     double x_current = matrix[g_num_][resi][aa_current-1];
-    //     assert( x_current<DDG_min || x_current>DDG_max); 
-          
+    //     assert( x_current<DDG_min || x_current>DDG_max);
+
     //     dg_ /= x_current;
     //     nucseq_.replace(codon_start, 3, codon_new);
     //     Na_ += 1;
@@ -260,14 +260,14 @@ This version of the mutation function draws the DDG value from a gaussian distri
 with a shifting mean to mimic sequence depletion.
 */
 double Gene::Mutate_Stabil_Gaussian(int i, int j)
-{ 
+{
     if (i >= ln_)
     {
         std::cerr << "ERROR: Mutation site out of bounds." << std::endl;
         exit(2);
-    }       
+    }
 
-       
+
     if (randomNumber() <= fNs)
     {
         // non-synonymous mutation
@@ -289,15 +289,15 @@ double Gene::Mutate_Stabil_Gaussian(int i, int j)
 /*
 This version of the mutation function gets the DDG value from the DDG matrix
 input by the user.
-INPUT: 
+INPUT:
     i -> site to mutate
     j -> bp to mutate to
 */
 std::string Gene::Mutate_Stabil(int i, int j)
-{ 
+{
     // extract codon to be mutated
     int cdn_ndx = (i%3);
-    int cdn_start = i - cdn_ndx; 
+    int cdn_start = i - cdn_ndx;
     int resi = cdn_start/3;
 
     // fetch current codon
@@ -306,19 +306,19 @@ std::string Gene::Mutate_Stabil(int i, int j)
     int aa_curr = GetIndexFromCodon(cdn_curr);
     std::string cdn_new = cdn_curr;
 
-    std::string s = PrimordialAASeq.at(g_num_);     
+    std::string s = PrimordialAASeq.at(g_num_);
     int aa_primo = GetIndexFromAA(s.at(resi));
 
     // get mutated bp
     std::string bp = AdjacentBP( cdn_curr.substr(cdn_ndx, 1), j); //new BP
-   
+
     // mutate codon
     cdn_new.replace(cdn_ndx, 1, bp);
     // check for stop codon
     cdn_new = n3_to_n3(cdn_new, cdn_curr, cdn_ndx);
     // get new amino acid
     int aa_new = GetIndexFromCodon(cdn_new);
-    
+
     // get DDG value from matrix
     double x = matrix[g_num_][resi][aa_new-1];
 
@@ -344,8 +344,8 @@ std::string Gene::Mutate_Stabil(int i, int j)
     else if(aa_primo == aa_new){//REVERT TO WT
 
         double x_curr = matrix[g_num_][resi][aa_curr-1];
-        assert( x_curr<DDG_min || x_curr>DDG_max); 
-          
+        assert( x_curr<DDG_min || x_curr>DDG_max);
+
         dg_ /= x_curr;
         nucseq_.replace(cdn_start, 3, cdn_new);
         Na_ += 1;
@@ -354,7 +354,7 @@ std::string Gene::Mutate_Stabil(int i, int j)
     else{//TYPICAL NON-SYNONYMOUS
 
         double x_curr = matrix[g_num_][resi][aa_curr-1];
-        assert( x_curr<DDG_min || x_curr>DDG_max); 
+        assert( x_curr<DDG_min || x_curr>DDG_max);
 
         // assign new DG value
         // division account for wildtype background
@@ -389,7 +389,7 @@ double Gene::randomNormal()
 
 // Updates the current DNA sequence
 void Gene::Update_Sequences(const std::string DNAsequence)
-{ 
+{
     int l = DNAsequence.length();
 
     if(l != ln_)
@@ -398,7 +398,7 @@ void Gene::Update_Sequences(const std::string DNAsequence)
         // std::cerr << "Old: " << nucseq_ << std::endl;
         // std::cerr << "New: " << DNAsequence << std::endl;
         exit(2);
-    }       
+    }
 
     nucseq_ = DNAsequence;
 }
@@ -513,7 +513,8 @@ double Gene::enzymaticFlux(bool stochastic)
     // Multiply by 1e9 to convert to nM.
     double concentration = 1e9 * abundance / AVOGADRO / CELL_VOLUME;
     double flux = (rel_kcat_over_km_ * concentration) /
-        (1 + drug_penetration_factor_ * DRUG_CONCENTRATION / k_i_);
+        (1 + drug_penetration_factor_ * DRUG_CONCENTRATION / k_i_) +
+        FOLA_CONCENTRATION * concentration;
 
     return flux;
 }
@@ -522,7 +523,7 @@ double Gene::enzymaticFlux(bool stochastic)
 double Gene::init_stochastic_conc()
 {
     // If OU_variance is non-zero, then stochastic_concentration_
-    //   is drawn from a normal distribution. 
+    //   is drawn from a normal distribution.
     double OU_variance = OU_tau_ * OU_diffusion_ / 2.;
     if (OU_variance != 0)
     {

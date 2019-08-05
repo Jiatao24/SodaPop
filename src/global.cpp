@@ -7,6 +7,7 @@ double matrix[max_gene][max_resi][20];
 double X_FACTOR = 1.3;           // FOR DHFR
 double DRUG_CONCENTRATION = 10; // nM
 double DRUG_INCREASE_FACTOR = 1.05;
+double FOLA_CONCENTRATION = 0 //folA mix concentraiton
 
 
 /******* MAPPING FUNCTIONS *******/
@@ -16,7 +17,7 @@ double DRUG_INCREASE_FACTOR = 1.05;
 int GetIndexFromCodon(std::string in_codon)
 {
     std::map <std::string, int>::const_iterator it;
-    it = codon_to_num::cnum.find(in_codon);  
+    it = codon_to_num::cnum.find(in_codon);
     if(it == codon_to_num::cnum.end()){
         std::cerr << "Invalid codon: "<< in_codon << std::endl;
         exit(2);
@@ -34,18 +35,18 @@ std::string GetProtFromNuc(std::string in_seq)
         std::cerr << "Invalid length for nucleotide sequence: " << ln << std::endl;
         exit(2);
     }
-    int la=ln/3;   
+    int la=ln/3;
     std::string AA="";
     for(int i=0; i<la;i++){
         std::string temp=in_seq.substr(i*3,3);
-        
+
         //check for valid code
         std::map <std::string, std::string> :: const_iterator Iter;
         Iter = codon_to_prot::cprot.find(temp);
         if (Iter == codon_to_prot::cprot.end()){
           std::cerr << "Invalid codon: "<< temp << std::endl;
           exit(2);
-        }   
+        }
         AA.append(codon_to_prot::cprot.at(temp));
     }
     return AA;
@@ -54,7 +55,7 @@ std::string GetProtFromNuc(std::string in_seq)
 // input:  amino acid letter as string
 // output: index number of amino acid
 int GetIndexFromAA(std::string aa)
-{  
+{
     //check for valid amino acid
     std::map <std::string, int> :: const_iterator it;
     it = prot_to_num::pnum.find(aa);
@@ -121,7 +122,7 @@ int CheckBP(std::string a){
 
 // returns the next or second to next bp from a given nucleotide
 std::string AdjacentBP(std::string a, int j){
- 
+
     if ( j > 2 ){
         std::cerr << "Invalid bp distance. Error in AdjacentBP(). "<< j << std::endl;
         exit(2);
@@ -144,7 +145,7 @@ std::string AdjacentBP(std::string a, int j){
 }
 
 //Checks if codon b when mutated resulted in a STOP codon a.
-//If b is a STOP codon, it is replaced by 
+//If b is a STOP codon, it is replaced by
 //Input: 	a, new codon
 //		b, old codon
 //		i, mutation site in codon (<3)
@@ -180,7 +181,7 @@ std::string n3_to_n3(std::string a, std::string b, int i){
               else if (b == "TCA") a = "TTA";
               else {
                 std::cerr << "Invalid starting codon in n3_to_n3()." << std::endl;
-                exit(2); 
+                exit(2);
               }
 
             break;
@@ -190,13 +191,13 @@ std::string n3_to_n3(std::string a, std::string b, int i){
               else if (b == "TAC") a = "TAT";
               else {
                 std::cerr << "Invalid starting codon in n3_to_n3()." << std::endl;
-                exit(2); 
+                exit(2);
               }
 
             break;
 
            default:
-            std::cerr << "ERROR in translating STOP codon to NON-STOP codon." << std::endl;    
+            std::cerr << "ERROR in translating STOP codon to NON-STOP codon." << std::endl;
       }
   }
   else if (a == "TAG")
@@ -246,13 +247,13 @@ std::string n3_to_n3(std::string a, std::string b, int i){
               else if (b == "TAC") a = "TAT";
               else {
                 std::cerr << "Invalid starting codon in n3_to_n3()." << std::endl;
-                exit(2); 
+                exit(2);
               }
 
               break;
 
              default:
-             std::cerr << "ERROR in translating STOP codon to NON-STOP codon." << std::endl;    
+             std::cerr << "ERROR in translating STOP codon to NON-STOP codon." << std::endl;
        }
    }
    else if (a == "TGA")
@@ -283,7 +284,7 @@ std::string n3_to_n3(std::string a, std::string b, int i){
               else if (b == "TCA") a = "TTA";
               else {
                 std::cerr << "Invalid starting codon in n3_to_n3()." << std::endl;
-                exit(2); 
+                exit(2);
               }
 
               break;
@@ -308,8 +309,8 @@ std::string n3_to_n3(std::string a, std::string b, int i){
            break;
 
            default:
-            std::cerr << "ERROR in translating STOP codon to NON-STOP codon." << std::endl;    
-      }  
+            std::cerr << "ERROR in translating STOP codon to NON-STOP codon." << std::endl;
+      }
   }
   return a;
 }
@@ -421,26 +422,26 @@ double Ran_Gaussian(const double mean, const double sigma)
         y = -1 + 2 * randomNumber();
         // check if it is in the unit circle
         r2 = x * x + y * y;
-    }while (r2 > 1.0 || r2 == 0); 
+    }while (r2 > 1.0 || r2 == 0);
     // Box-Muller transform
     return mean + sigma * y * sqrt (-2.0 * log (r2) / r2);
 }
 
 // Loads primordial genes in a std::vector<std::string>
 void LoadPrimordialGenes(const std::string& genelistfile, const std::string& genesPath)
-{  
+{
     std::fstream genelistIN (genelistfile.c_str());
     if (!genelistIN.is_open()){
         std::cerr << "File could not be open: "<< genelistfile <<std::endl;
         exit(2);
     }
-    int flag_AASeq = 0; 
+    int flag_AASeq = 0;
     int gc = 0;
     while(!genelistIN.eof()){
         std::string word, line;
         getline(genelistIN,line);
         std::istringstream iss(line, std::istringstream::in);
-        iss >> word; 
+        iss >> word;
         if ( word=="G" ){
             iss >> word;
             word = genesPath + "/" +  word;
@@ -469,7 +470,7 @@ void LoadPrimordialGenes(const std::string& genelistfile, const std::string& gen
                       size_t loc = aaseq.find("X", 0);
                       assert( loc == std::string::npos ); // no match
                       auto iter = PrimordialAASeq.begin();
-                      PrimordialAASeq.insert(iter+gn, aaseq); 
+                      PrimordialAASeq.insert(iter+gn, aaseq);
                       flag_AASeq += 1;
                   }
             }
@@ -502,7 +503,7 @@ void qread_Cell(std::fstream& IN, std::fstream& OUT)
     IN.read((char*)(&na),sizeof(int));
     IN.read((char*)(&ns),sizeof(int));
     IN.read((char*)(&f),sizeof(double));
-    
+
     sprintf(buffer,"\tC\t%d\t%d\t%e", na, ns, f);
     OUT << buffer;
 }
@@ -528,7 +529,7 @@ void read_Cell(std::fstream& IN, std::fstream& OUT)
     int l;
     IN.read((char*)&l, sizeof(int));
     std::vector<char> buf(l);
-    IN.read(&buf[0], l);  
+    IN.read(&buf[0], l);
     barcode.assign(buf.begin(), buf.end());
 
     OUT << barcode;
@@ -536,7 +537,7 @@ void read_Cell(std::fstream& IN, std::fstream& OUT)
     IN.read((char*)(&f),sizeof(double));
     IN.read((char*)(&m),sizeof(double));
     IN.read((char*)(&gene_size),sizeof(int));
-    
+
     sprintf(buffer,"\tC\t%d\t%e\t%e", cell_index, f, m);
     OUT << buffer << std::endl;
 
@@ -546,7 +547,7 @@ void read_Cell(std::fstream& IN, std::fstream& OUT)
         int gene_nid, Ns, Na;
         std::string DNAsequence;
 
-        IN.read((char*)(&gene_nid),sizeof(int));   
+        IN.read((char*)(&gene_nid),sizeof(int));
         IN.read((char*)(&e),sizeof(double));
         IN.read((char*)(&c),sizeof(double));
         IN.read((char*)(&stoc_conc),sizeof(double));
@@ -555,18 +556,18 @@ void read_Cell(std::fstream& IN, std::fstream& OUT)
 
         IN.read((char*)(&Ns),sizeof(int));
         IN.read((char*)(&Na),sizeof(int));
-        
+
         //read DNA sequence
         int nl;
         IN.read((char*)&nl, sizeof(int));
         std::vector<char> buff(nl);
-        IN.read(&buff[0], nl);  
+        IN.read(&buff[0], nl);
         DNAsequence.assign(buff.begin(), buff.end());
 
         sprintf(buffer,"%d\tG\t%.5f\t%.5f\t%e\t%e\t%d\t%d\t",j, c, stoc_conc, dg, f, Na, Ns);
         OUT << buffer << std::endl;
         OUT << GetProtFromNuc(DNAsequence) << std::endl;
-    } 
+    }
 }
 
 // Counts the number of dissimilar characters in 2 strings
@@ -574,10 +575,10 @@ int StringDiff(const std::string& A, const std::string& B)
 {
     unsigned int L = A.length();
     assert(L == B.length());
-    int ctr = 0;  
+    int ctr = 0;
     for(unsigned int i =0; i<L; i++){
-        if( A.at(i) != B.at(i)) ctr+=1; 
-    } 
+        if( A.at(i) != B.at(i)) ctr+=1;
+    }
     return ctr;
 }
 
@@ -600,7 +601,7 @@ bool isDirExist(const std::string& path)
         return false;
     }
     return (info.st_mode & _S_IFDIR) != 0;
-#else 
+#else
     struct stat info;
     if (stat(path.c_str(), &info) != 0){
         return false;
@@ -638,7 +639,7 @@ bool makePath(const std::string& path)
         // try to create again
 #if defined(_WIN32)
         return 0 == _mkdir(path.c_str());
-#else 
+#else
         return 0 == mkdir(path.c_str(), mode);
 #endif
     case EEXIST:
