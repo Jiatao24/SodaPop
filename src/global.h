@@ -34,12 +34,12 @@ Copyright (C) 2017 Louis Gauthier
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-    
+
     SodaPop is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-    
+
     You should have received a copy of the GNU General Public License
     along with SodaPop.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -72,6 +72,8 @@ extern double DRUG_CONCENTRATION;
 extern double DRUG_INCREASE_FACTOR;
 extern double DRUG_DECREASE_FACTOR;
 
+extern double FOLA_CONCENTRATION;
+
 
 // exponent values are precalculated to be used readily
 const double DDG_min = exp(-1*(ddG_min)/kT);
@@ -83,7 +85,7 @@ constexpr double CELL_VOLUME = 7e-16; // in liters (L)
 
 
 // If the mutation is to a stop codon
-// DG_mutant is set to 99 kcal/mol 
+// DG_mutant is set to 99 kcal/mol
 // -> all copies are effectively aggregated
 const double DG_STOP = exp(-1*(99)/kT);
 
