@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 
         TCLAP::ValueArg<double> concentrationArg("", "concentration", "Amount of drug present (nM)", false, 0, "non-negative double");
 
-        TCLAP::ValueArg<double> folAconcArg("", "folA mix concentration", "Amount of folA mix present (0-1)", false, 0, "non-negative double");
+        TCLAP::ValueArg<double> folAconcArg("", "folA-conc", "Amount of folA mix present (0-1)", false, 0, "non-negative double");
 
         TCLAP::SwitchArg rampingArg("", "ramping", "Drug concentration adjusts to population fitness.", cmd, false);
 

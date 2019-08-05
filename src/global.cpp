@@ -7,7 +7,7 @@ double matrix[max_gene][max_resi][20];
 double X_FACTOR = 1.3;           // FOR DHFR
 double DRUG_CONCENTRATION = 10; // nM
 double DRUG_INCREASE_FACTOR = 1.05;
-double FOLA_CONCENTRATION = 0 //folA mix concentraiton
+double FOLA_CONCENTRATION = 0; //folA mix concentraiton
 
 
 /******* MAPPING FUNCTIONS *******/
