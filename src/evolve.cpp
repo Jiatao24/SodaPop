@@ -18,12 +18,12 @@ Copyright (C) 2017 Louis Gauthier
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-    
+
     SodaPop is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-    
+
     You should have received a copy of the GNU General Public License
     along with SodaPop.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -145,8 +145,8 @@ void saveSnapshot(char* buffer, std::vector<PolyCell>& cells,
     }
     OUT2 << std::setw(2) << output << std::endl;
 
-    OUT2.close();   
-    
+    OUT2.close();
+
     return;
 }
 
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
     // Wrap everything in a try block
     // errors in input are caught and explained to user
     try
-    { 
+    {
         // Define the command line object
         TCLAP::CmdLine cmd("SodaPop: a multi-scale model of molecular evolution", ' ', "SodaPop/0.1.3b-biophysical");
 
@@ -190,10 +190,10 @@ int main(int argc, char *argv[])
 
         // fitness function
         TCLAP::ValueArg<int> fitArg("f","fitness","Fitness function",false,1,"integer ID");
-    
+
         // boolean switch to track mutations
         TCLAP::SwitchArg eventsArg("e","track-events","Track mutation events", cmd, false);
-    
+
         // RNG seed
         TCLAP::ValueArg<unsigned long> seedArg("", "seed", "Seed value for RNG.", false, 0, "unsigned int (64-bit)");
 
@@ -209,9 +209,11 @@ int main(int argc, char *argv[])
 
         TCLAP::ValueArg<double> concentrationArg("", "concentration", "Amount of drug present (nM)", false, 0, "non-negative double");
 
+        TCLAP::ValueArg<double> folAconcArg("", "folA mix concentration", "Amount of folA mix present (0-1)", false, 0, "non-negative double");
+
         TCLAP::SwitchArg rampingArg("", "ramping", "Drug concentration adjusts to population fitness.", cmd, false);
 
-        TCLAP::ValueArg<int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");        
+        TCLAP::ValueArg<int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");
 
         // Add the arguments to the CmdLine object.
         cmd.add(seedArg);
@@ -226,12 +228,13 @@ int main(int argc, char *argv[])
         cmd.add(fitArg);
         cmd.add(xfactorArg);
         cmd.add(concentrationArg);
+        cmd.add(folAconcArg);
         cmd.add(equilArg);
 
         // Parse the argv array.
         cmd.parse(argc, argv);
 
-        // Get values from args. 
+        // Get values from args.
         generationMax = maxArg.getValue();
         populationSize = popArg.getValue();
         DT = dtArg.getValue();
@@ -278,6 +281,17 @@ int main(int argc, char *argv[])
             }
         }
 
+        if (folAconcArg.isSet())
+        {
+            FOLA_CONCENTRATION = folAconcArg.getValue();
+            if (FOLA_CONCENTRATION < 0)
+            {
+                std::cerr << "error: --concentration argument < 0 ("
+                          << FOLA_CONCENTRATION << ")\n";
+                exit(1);
+            }
+        }
+
     }
     catch (TCLAP::ArgException &e)
     {
@@ -292,7 +306,7 @@ int main(int argc, char *argv[])
         std::cerr << "File could not be open: "<< startSnapFile << std::endl;
         exit(2);
     }
-    
+
     // header
     int Total_Cell_Count;
     double frame_time;
@@ -319,13 +333,13 @@ int main(int argc, char *argv[])
         it->ch_barcode(getBarcode());
         it->init_gene_stochastic_concentrations();
         it->UpdateRates();
-    } 
+    }
     startsnap.close();
 
     std::cout << "Saving initial genotype counts ... " << std::endl;
     // save initial population snapshot
     sprintf(buffer, "%s/%s.gen%010d.json", outPath.c_str(),
-            outDir.c_str(), generationNumber); 
+            outDir.c_str(), generationNumber);
     saveSnapshot(buffer, Cell_arr, (int)frame_time);
 
     std::ofstream MUTATIONLOG;
@@ -340,7 +354,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
     }
-    
+
     std::cout << "Starting evolution ..." << std::endl;
 
     // Setup GSL-style RNG for multinomial.
@@ -372,7 +386,7 @@ int main(int argc, char *argv[])
             std::fill_n(std::back_inserter(Cell_temp), progeny, (*cell_it));
             cell_it++;
         }
-        
+
         // Now go through each cell for mutation
         for (auto& cell : Cell_temp)
         {
@@ -408,15 +422,15 @@ int main(int argc, char *argv[])
         {
             it->UpdateNsNa();
         }
-        
+
         // update generation counter
-        generationNumber++; 
-     
+        generationNumber++;
+
         // save population snapshot every DT generations
         if ((generationNumber % DT) == 0)
         {
              sprintf(buffer, "%s/%s.gen%010d.json", outPath.c_str(),
-                     outDir.c_str(), generationNumber); 
+                     outDir.c_str(), generationNumber);
 
              saveSnapshot(buffer, Cell_arr, generationNumber);
              std::cout << "Generation: " << generationNumber << std::endl;
