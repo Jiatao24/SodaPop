@@ -237,8 +237,7 @@ int main(int argc, char *argv[])
         cmd.add(xfactorArg);
         cmd.add(concentrationArg);
         cmd.add(folAconcArg);
-        cmd.add(rampingArg);
-        cmd.add(rampfolArg);
+        cmd.add(folAfactor);
         cmd.add(folAthreshArg);
         cmd.add(equilArg);
 
