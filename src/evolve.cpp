@@ -217,6 +217,10 @@ int main(int argc, char *argv[])
 
         TCLAP::SwitchArg rampfolArg("", "rampfolA", "folA concentration adjusts to population fitness.", cmd, false);
 
+        TCLAP::ValueArg<double> folAfactor("", "folA-delta", "Change in FolA Concentration", false, 0, "non-negative double");
+
+        TCLAP::ValueArg<double> folAthreshArg("", "folA-thres", "Threshold of fitness for FolA (0-1)", false, 0, "non-negative double");
+
         TCLAP::ValueArg<int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");
 
         // Add the arguments to the CmdLine object.
@@ -233,6 +237,9 @@ int main(int argc, char *argv[])
         cmd.add(xfactorArg);
         cmd.add(concentrationArg);
         cmd.add(folAconcArg);
+        cmd.add(rampingArg);
+        cmd.add(rampfolArg);
+        cmd.add(folAthreshArg);
         cmd.add(equilArg);
 
         // Parse the argv array.
@@ -293,6 +300,28 @@ int main(int argc, char *argv[])
             {
                 std::cerr << "error: --concentration argument < 0 ("
                           << FOLA_CONCENTRATION << ")\n";
+                exit(1);
+            }
+        }
+
+        if (folAfactor.isSet())
+        {
+            FOLA_INCREASE_FACTOR = folAfactor.getValue();
+            if (FOLA_INCREASE_FACTOR < 0)
+            {
+                std::cerr << "error: --concentration argument < 0 ("
+                          << FOLA_INCREASE_FACTOR << ")\n";
+                exit(1);
+            }
+        }
+
+        if (folAthreshArg.isSet())
+        {
+            FOLA_FIT_THRESHOLD = folAthreshArg.getValue();
+            if (FOLA_FIT_THRESHOLD < 0)
+            {
+                std::cerr << "error: --concentration argument < 0 ("
+                          << FOLA_FIT_THRESHOLD << ")\n";
                 exit(1);
             }
         }
@@ -473,7 +502,7 @@ int main(int argc, char *argv[])
             }
             double fitnessAverage = fitnessTotal / (double)fitnesses.size();
 
-            if (fitnessAverage > 0.5)
+            if (fitnessAverage > FOLA_FIT_THRESHOLD)
             {
                 FOLA_CONCENTRATION /= FOLA_INCREASE_FACTOR;
             }

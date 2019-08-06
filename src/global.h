@@ -74,6 +74,7 @@ extern double DRUG_DECREASE_FACTOR;
 
 extern double FOLA_CONCENTRATION;
 extern double FOLA_INCREASE_FACTOR;
+extern double FOLA_FIT_THRESHOLD;
 
 
 // exponent values are precalculated to be used readily
