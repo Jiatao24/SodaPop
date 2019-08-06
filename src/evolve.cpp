@@ -138,6 +138,7 @@ void saveSnapshot(char* buffer, std::vector<PolyCell>& cells,
     output["average fitness"] = averageFitness;
     output["genotypes"] = genotypeCounts;
     output["genotype fitnesses"] = genotypeFitnesses;
+    output["folA mix (0-1)"] = FOLA_CONCENTRATION;
     if (PolyCell::ff_ == 8)
     {
         output["average abundances"] = abundances;
