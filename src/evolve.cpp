@@ -165,6 +165,7 @@ int main(int argc, char *argv[])
     char buffer[200];
     bool trackMutations = false;
     bool rampingDrug = false;
+    bool rampingFolA = false;
 
     std::string geneListFile, genesPath;
     std::string outDir, startSnapFile, matrixFile;
@@ -214,6 +215,8 @@ int main(int argc, char *argv[])
 
         TCLAP::SwitchArg rampingArg("", "ramping", "Drug concentration adjusts to population fitness.", cmd, false);
 
+        TCLAP::SwitchArg rampfolArg("", "ramping", "folA concentration adjusts to population fitness.", cmd, false);
+
         TCLAP::ValueArg<int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");
 
         // Add the arguments to the CmdLine object.
@@ -259,6 +262,7 @@ int main(int argc, char *argv[])
 
         trackMutations = eventsArg.getValue();
         rampingDrug = rampingArg.getValue();
+        rampingFolA = rampfolArg.getValue();
 
         if (xfactorArg.isSet())
         {
@@ -458,6 +462,27 @@ int main(int argc, char *argv[])
             // I suppose there could be some checks to make sure
             // DRUG_CONCENTRATION stays in some bounds.
         }
+
+        if (rampingFolA)
+        {
+            // Calculate a fitness average
+            double fitnessTotal(0);
+            for (auto& fitness : fitnesses)
+            {
+                fitnessTotal += fitness;
+            }
+            double fitnessAverage = fitnessTotal / (double)fitnesses.size();
+
+            if (fitnessAverage > 0.5)
+            {
+                FOLA_CONCENTRATION /= FOLA_INCREASE_FACTOR;
+            }
+            else
+            {
+                FOLA_CONCENTRATION *= FOLA_INCREASE_FACTOR;
+            }
+        }
+
     }
 
     MUTATIONLOG.close();
