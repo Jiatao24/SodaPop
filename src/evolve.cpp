@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 
         TCLAP::SwitchArg rampingArg("", "ramping", "Drug concentration adjusts to population fitness.", cmd, false);
 
-        TCLAP::SwitchArg rampfolArg("", "ramping", "folA concentration adjusts to population fitness.", cmd, false);
+        TCLAP::SwitchArg rampfolArg("", "rampfolA", "folA concentration adjusts to population fitness.", cmd, false);
 
         TCLAP::ValueArg<int> equilArg("", "equil", "Time before mutation", false, 0, "nonnegative int");
 
