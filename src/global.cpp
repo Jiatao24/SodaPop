@@ -8,7 +8,7 @@ double X_FACTOR = 1.3;           // FOR DHFR
 double DRUG_CONCENTRATION = 10; // nM
 double DRUG_INCREASE_FACTOR = 1.05;
 double FOLA_CONCENTRATION = 0; //folA mix concentration
-double FOLA_INCREASE_FACTOR = 1.05;
+double FOLA_INCREASE_FACTOR = 1.0;
 double FOLA_FIT_THRESHOLD = 0.5; //fitness threshold to increase folA mix concentration
 
 
